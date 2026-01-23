@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אישור פגישה</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-primary: #1a4d3e;
+            --color-primary-light: #2d6a5a;
+            --color-accent: #c9a962;
+            --color-cream: #f8f5f0;
+            --color-success: #4caf50;
+            --color-danger: #e74c3c;
+            --color-warning: #f39c12;
+            --color-text: #3d3d3d;
+            --color-text-light: #6b6b6b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Heebo', sans-serif;
+            background: linear-gradient(135deg, var(--color-cream) 0%, #efe9df 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(26, 77, 62, 0.15);
+            max-width: 450px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: var(--color-primary);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .appointment-details {
+            background: var(--color-cream);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .detail-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-icon {
+            font-size: 1.3rem;
+            width: 35px;
+            text-align: center;
+        }
+
+        .detail-label {
+            color: var(--color-text-light);
+            font-size: 0.85rem;
+        }
+
+        .detail-value {
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 16px 24px;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Heebo', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-confirm {
+            background: var(--color-success);
+            color: white;
+        }
+
+        .btn-confirm:hover {
+            background: #43a047;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-cancel {
+            background: white;
+            color: var(--color-danger);
+            border: 2px solid var(--color-danger);
+        }
+
+        .btn-cancel:hover {
+            background: var(--color-danger);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Status States */
+        .status-message {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .status-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+
+        .status-message h2 {
+            margin-bottom: 10px;
+            color: var(--color-text);
+        }
+
+        .status-message p {
+            color: var(--color-text-light);
+        }
+
+        .status-confirmed .status-icon { color: var(--color-success); }
+        .status-cancelled .status-icon { color: var(--color-danger); }
+        .status-already .status-icon { color: var(--color-warning); }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 30px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--color-cream);
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading p {
+            margin-top: 20px;
+            color: var(--color-text-light);
+        }
+
+        /* Error */
+        .error {
+            text-align: center;
+            padding: 40px 30px;
+        }
+
+        .error-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        /* Hidden */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Notes input */
+        .notes-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .notes-section label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .notes-section textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--color-cream);
+            border-radius: 8px;
+            font-family: 'Heebo', sans-serif;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .notes-section textarea:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Loading State -->
+        <div id="loading-state" class="loading">
+            <div class="spinner"></div>
+            <p>טוען פרטי פגישה...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error-state" class="error hidden">
+            <div class="error-icon">😕</div>
+            <h2>לא מצאנו את הפגישה</h2>
+            <p>הקישור לא תקין או שהפגישה כבר בוטלה</p>
+        </div>
+
+        <!-- Appointment Details -->
+        <div id="appointment-state" class="hidden">
+            <div class="header">
+                <h1>הפגישה שלך</h1>
+                <p id="business-name">אישור והזכרה</p>
+            </div>
+            <div class="content">
+                <div class="appointment-details">
+                    <div class="detail-row">
+                        <span class="detail-icon">📅</span>
+                        <div>
+                            <div class="detail-label">תאריך</div>
+                            <div class="detail-value" id="apt-date">-</div>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-icon">🕐</span>
+                        <div>
+                            <div class="detail-label">שעה</div>
+                            <div class="detail-value" id="apt-time">-</div>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-icon">📋</span>
+                        <div>
+                            <div class="detail-label">סוג פגישה</div>
+                            <div class="detail-value" id="apt-service">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions" id="actions">
+                    <button class="btn btn-confirm" onclick="confirmAppointment()">
+                        <span>✓</span>
+                        אני מגיע/ה
+                    </button>
+                    <button class="btn btn-cancel" onclick="showCancelForm()">
+                        <span>✗</span>
+                        אני צריך/ה לבטל
+                    </button>
+                </div>
+
+                <!-- Cancel Notes -->
+                <div id="cancel-form" class="notes-section hidden">
+                    <label for="cancel-notes">סיבת הביטול (אופציונלי):</label>
+                    <textarea id="cancel-notes" placeholder="למה את/ה צריך/ה לבטל?"></textarea>
+                    <div class="actions" style="margin-top: 15px;">
+                        <button class="btn btn-cancel" onclick="cancelAppointment()">
+                            <span>✗</span>
+                            אישור ביטול
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirmed State -->
+        <div id="confirmed-state" class="status-message status-confirmed hidden">
+            <div class="status-icon">✓</div>
+            <h2>תודה על האישור!</h2>
+            <p>נתראה בפגישה 😊</p>
+        </div>
+
+        <!-- Cancel Requested State -->
+        <div id="cancelled-state" class="status-message status-cancelled hidden">
+            <div class="status-icon">📞</div>
+            <h2>קיבלנו את הבקשה</h2>
+            <p>ניצור איתך קשר בהקדם לגבי הביטול</p>
+        </div>
+
+        <!-- Already Responded State -->
+        <div id="already-state" class="status-message status-already hidden">
+            <div class="status-icon">📋</div>
+            <h2>כבר קיבלנו את התשובה שלך</h2>
+            <p id="already-status">-</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3003/api';
+        let currentAppointment = null;
+
+        // Get booking ID from URL
+        function getBookingId() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('id');
+        }
+
+        // Format date in Hebrew
+        function formatHebrewDate(dateStr) {
+            const date = new Date(dateStr + 'T00:00:00');
+            return date.toLocaleDateString('he-IL', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+        }
+
+        // Show a specific state
+        function showState(stateId) {
+            const states = ['loading-state', 'error-state', 'appointment-state', 'confirmed-state', 'cancelled-state', 'already-state'];
+            states.forEach(id => {
+                document.getElementById(id).classList.toggle('hidden', id !== stateId);
+            });
+        }
+
+        // Load appointment details
+        async function loadAppointment() {
+            const bookingId = getBookingId();
+            
+            if (!bookingId) {
+                showState('error-state');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/booking/appointment/${bookingId}`);
+                
+                if (!response.ok) {
+                    throw new Error('Appointment not found');
+                }
+
+                currentAppointment = await response.json();
+                
+                // Check if already responded
+                if (currentAppointment.status === 'confirmed') {
+                    document.getElementById('already-status').textContent = 'הפגישה מאושרת ✓';
+                    showState('already-state');
+                    return;
+                }
+                
+                if (currentAppointment.status === 'cancel_requested' || currentAppointment.status === 'cancelled') {
+                    document.getElementById('already-status').textContent = 'ביטול התקבל';
+                    showState('already-state');
+                    return;
+                }
+
+                // Display appointment details
+                document.getElementById('apt-date').textContent = formatHebrewDate(currentAppointment.date);
+                document.getElementById('apt-time').textContent = currentAppointment.time;
+                document.getElementById('apt-service').textContent = currentAppointment.service;
+                
+                showState('appointment-state');
+                
+            } catch (error) {
+                console.error('Error loading appointment:', error);
+                showState('error-state');
+            }
+        }
+
+        // Confirm appointment
+        async function confirmAppointment() {
+            const btn = document.querySelector('.btn-confirm');
+            btn.disabled = true;
+            btn.innerHTML = '<span>⏳</span> שולח...';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/booking/appointment/${currentAppointment.bookingId}/confirm`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to confirm');
+                }
+
+                showState('confirmed-state');
+                
+            } catch (error) {
+                console.error('Error confirming:', error);
+                alert('שגיאה באישור הפגישה. נסה שוב.');
+                btn.disabled = false;
+                btn.innerHTML = '<span>✓</span> אני מגיע/ה';
+            }
+        }
+
+        // Show cancel form
+        function showCancelForm() {
+            document.getElementById('actions').classList.add('hidden');
+            document.getElementById('cancel-form').classList.remove('hidden');
+        }
+
+        // Cancel appointment
+        async function cancelAppointment() {
+            const btn = document.querySelector('#cancel-form .btn-cancel');
+            btn.disabled = true;
+            btn.innerHTML = '<span>⏳</span> שולח...';
+
+            const notes = document.getElementById('cancel-notes').value;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/booking/appointment/${currentAppointment.bookingId}/cancel`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ notes })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to cancel');
+                }
+
+                showState('cancelled-state');
+                
+            } catch (error) {
+                console.error('Error cancelling:', error);
+                alert('שגיאה בשליחת הבקשה. נסה שוב.');
+                btn.disabled = false;
+                btn.innerHTML = '<span>✗</span> אישור ביטול';
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', loadAppointment);
+    </script>
+</body>
+</html>
+
