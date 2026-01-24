@@ -7,26 +7,11 @@ const { getBookingSettings } = require('./googleSheets');
 
 // Message placeholders - will be replaced with actual recordings or TTS
 const MESSAGES = {
-    // IVR_welcome: Office is OPEN - Welcome menu
-    IVR_welcome: `
-        שלום וברוכים הבאים.
-        לשיחה עם נציג, הקישו 1.
-        לקבלת הודעה בוואטסאפ, הקישו 2.
-    `,
-    
-    // IVR_no_answer: Rep didn't answer after 5 rings
+    // IVR_no_answer: Rep didn't answer after 4 rings
+    // TODO: Update this message with user-provided content
     IVR_no_answer: `
         מצטערים, אין מענה כרגע.
-        להמתנה לנציג, המתינו על הקו.
         לקבלת הודעה בוואטסאפ, הקישו 9.
-    `,
-    
-    // IVR_closed: Office is CLOSED
-    IVR_closed: `
-        שלום, הגעתם אלינו מחוץ לשעות הפעילות.
-        שעות הפעילות שלנו הן ימים א עד ה, בין 9 בבוקר ל-5 אחר הצהריים.
-        מיד תקבלו הודעת וואטסאפ ותוכלו להשאיר פרטים.
-        תודה ולהתראות.
     `,
 
     // IVR_whatsapp_sent: WhatsApp sent confirmation
@@ -38,19 +23,17 @@ const MESSAGES = {
 };
 
 /**
- * Check if office is currently open based on Google Sheet settings
+ * Check if office is currently open based on Google Sheet Working Hours
+ * 
+ * Per-day Active column values:
+ * - OPEN: Office is open all day (ignore hours)
+ * - CLOSED: Office is closed all day (ignore hours)
+ * - DEFAULT: Check if current time is within start-end hours
  */
 async function isOfficeOpen() {
     try {
         const settings = await getBookingSettings();
         const workingHours = settings.workingHours;
-        const forceOpen = settings.settings.forceOpen;
-
-        // Check Force Open override
-        if (forceOpen === true || forceOpen === 'TRUE' || forceOpen === 'true') {
-            console.log('🏢 Office FORCE OPEN (override active)');
-            return true;
-        }
 
         // Get current day and time in Israel
         const now = new Date();
@@ -63,10 +46,21 @@ async function isOfficeOpen() {
         const todayHours = workingHours[currentDay];
 
         if (!todayHours) {
-            console.log(`🏢 Office CLOSED (${currentDay} is a day off)`);
+            console.log(`🏢 Office CLOSED (${currentDay} not configured)`);
             return false;
         }
 
+        // Check day status: OPEN, CLOSED, or DEFAULT
+        if (todayHours.status === 'OPEN') {
+            console.log(`🏢 Office OPEN (${currentDay} forced OPEN)`);
+            return true;
+        }
+        if (todayHours.status === 'CLOSED') {
+            console.log(`🏢 Office CLOSED (${currentDay} forced CLOSED)`);
+            return false;
+        }
+
+        // DEFAULT - check if within working hours
         const isOpen = currentMinutes >= todayHours.startMinutes && 
                        currentMinutes < todayHours.endMinutes;
 

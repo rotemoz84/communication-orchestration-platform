@@ -49,14 +49,19 @@ async function getWorkingHours(sheets) {
             const [day, start, end, active] = row;
             if (day) {
                 const dayLower = day.toLowerCase().trim();
-                const isActive = active?.toUpperCase() === 'TRUE' || active === '1' || active?.toUpperCase() === 'YES';
+                const status = active?.toUpperCase().trim() || 'DEFAULT';
                 
-                workingHours[dayLower] = isActive ? {
+                // Active column can be: OPEN, CLOSED, or DEFAULT
+                // OPEN = always open (ignore hours)
+                // CLOSED = always closed (ignore hours)
+                // DEFAULT = check the hours
+                workingHours[dayLower] = {
                     start: start?.trim() || null,
                     end: end?.trim() || null,
                     startMinutes: timeToMinutes(start?.trim()),
-                    endMinutes: timeToMinutes(end?.trim())
-                } : null;
+                    endMinutes: timeToMinutes(end?.trim()),
+                    status: (status === 'OPEN' || status === 'CLOSED') ? status : 'DEFAULT'
+                };
             }
         });
 
@@ -107,6 +112,7 @@ async function getMeetingTypes(sheets) {
 /**
  * Read general settings from the "Settings" sheet
  * Expected format: Setting Name | Value (two columns)
+ * Note: Office status is now controlled per-day in Working Hours tab
  */
 async function getGeneralSettings(sheets) {
     try {
@@ -116,53 +122,21 @@ async function getGeneralSettings(sheets) {
         });
 
         const rows = response.data.values || [];
-        const settings = {
-            bufferTime: 15,
-            advanceBookingDays: 60,
-            minNoticeHours: 24,
-            timezone: process.env.TIMEZONE || 'UTC',
-            forceOpen: false
-        };
+        const settings = {};
 
-        const settingMapping = {
-            'buffer time': 'bufferTime',
-            'buffer between meetings': 'bufferTime',
-            'advance booking days': 'advanceBookingDays',
-            'days in advance': 'advanceBookingDays',
-            'minimum notice hours': 'minNoticeHours',
-            'min notice': 'minNoticeHours',
-            'timezone': 'timezone',
-            'force open': 'forceOpen',
-            'forceopen': 'forceOpen'
-        };
-
+        // Add any future settings here
         rows.forEach(row => {
             const [name, value] = row;
             if (name && value !== undefined) {
-                const nameLower = name.toLowerCase().trim();
-                const settingKey = settingMapping[nameLower];
-                if (settingKey) {
-                    // Handle boolean values
-                    if (settingKey === 'forceOpen') {
-                        settings[settingKey] = value.toString().toUpperCase() === 'TRUE' || value === '1';
-                    } else {
-                        settings[settingKey] = isNaN(value) ? value : parseInt(value);
-                    }
-                }
+                // Store settings as key-value pairs
+                settings[name.toLowerCase().trim()] = value;
             }
         });
 
         return settings;
     } catch (error) {
         console.error('Error reading Settings:', error.message);
-        // Return defaults if settings sheet doesn't exist
-        return {
-            bufferTime: 15,
-            advanceBookingDays: 60,
-            minNoticeHours: 24,
-            timezone: process.env.TIMEZONE || 'UTC',
-            forceOpen: false
-        };
+        return {};
     }
 }
 
