@@ -3,7 +3,7 @@
  * Handles incoming calls via Twilio
  * 
  * Flow:
- * 1. Incoming call → Check if office open → Track call in Google Sheet
+ * 1. Incoming call → Check if office open → Track call in database
  * 2. Office OPEN:
  *    - Forward directly to rep (4 rings / ~20 seconds)
  *    - If no answer → Play IVR_no_answer message
@@ -16,12 +16,15 @@
 const express = require('express');
 const router = express.Router();
 const VoiceResponse = require('twilio').twiml.VoiceResponse;
-const { isOfficeOpen, getMessage } = require('../services/ivr');
-const { sendMissedCallWhatsApp } = require('../services/whatsapp');
-const { saveCallRecord, updateCallRecord } = require('../services/callTracking');
+const { isOfficeOpen } = require('./service');
+const { getMessage, getAllMessages } = require('./messages');
+const { sendMissedCallWhatsApp } = require('../integrations/twilio/whatsapp');
+const { callRepository } = require('../dal');
+const { config } = require('../config');
+const { DEFAULTS } = require('../constants');
 
-// Rep phone number from environment
-const REP_PHONE = process.env.REP_PHONE_NUMBER || '+972500000000';
+// Rep phone number from config
+const REP_PHONE = config.repPhoneNumber;
 
 /**
  * Main entry point for incoming calls
@@ -37,11 +40,11 @@ router.post('/incoming', async (req, res) => {
     try {
         const officeOpen = await isOfficeOpen();
 
-        // Track the call in Google Sheets
-        saveCallRecord({
+        // Track the call in database
+        callRepository.create({
             callerNumber,
             officeStatus: officeOpen ? 'open' : 'closed',
-            outcome: 'incoming', // Will be updated later with final outcome
+            outcome: 'incoming',
             twilioCallSid
         }).catch(err => {
             console.error('Failed to track call:', err.message);
@@ -54,8 +57,8 @@ router.post('/incoming', async (req, res) => {
             const dial = twiml.dial({
                 action: '/api/voice/dial-callback',
                 method: 'POST',
-                timeout: 20, // ~4 rings (approximately 5 seconds per ring)
-                callerId: req.body.To // Use the business number as caller ID
+                timeout: DEFAULTS.DIAL_TIMEOUT,
+                callerId: req.body.To
             });
             
             dial.number(REP_PHONE);
@@ -64,7 +67,6 @@ router.post('/incoming', async (req, res) => {
             // Office is CLOSED - play IVR_no_answer message with WhatsApp option
             console.log('🏢 Office CLOSED - playing IVR_no_answer');
             
-            // Gather with no_answer message (press 9 for WhatsApp)
             const gather = twiml.gather({
                 numDigits: 1,
                 action: '/api/voice/closed-menu',
@@ -81,13 +83,13 @@ router.post('/incoming', async (req, res) => {
             // If no input after timeout, send WhatsApp anyway and hang up
             twiml.say({
                 language: 'he-IL'
-            }, 'שולחים לך הודעת וואטסאפ. להתראות.');
+            }, getMessage('IVR_closed_sending_whatsapp'));
 
             sendMissedCallWhatsApp(callerNumber, 'closed').catch(err => {
                 console.error('Failed to send closed-hours WhatsApp:', err.message);
             });
 
-            updateCallRecord(callerNumber, { outcome: 'closed_hours_whatsapp' }).catch(err => {
+            callRepository.updateByCallerNumber(callerNumber, { outcome: 'closed_hours_whatsapp' }).catch(err => {
                 console.error('Failed to update call record:', err.message);
             });
 
@@ -98,66 +100,8 @@ router.post('/incoming', async (req, res) => {
         console.error('Error in voice handler:', error.message);
         twiml.say({
             language: 'he-IL'
-        }, 'מצטערים, אירעה שגיאה. אנא נסה שוב מאוחר יותר.');
+        }, getMessage('IVR_error'));
         twiml.hangup();
-    }
-
-    res.type('text/xml');
-    res.send(twiml.toString());
-});
-
-/**
- * Handle menu selection from Message A (Legacy - kept for backwards compatibility)
- * POST /api/voice/menu-selection
- * Note: Current flow forwards directly to rep without menu
- */
-router.post('/menu-selection', async (req, res) => {
-    const twiml = new VoiceResponse();
-    const digit = req.body.Digits;
-    const callerNumber = req.body.From || 'unknown';
-
-    console.log(`📞 Menu selection: ${digit} from ${callerNumber}`);
-
-    switch (digit) {
-        case '1':
-            // Connect to rep with timeout handling
-            console.log('➡️ Forwarding to rep...');
-            
-            const dial = twiml.dial({
-                action: '/api/voice/dial-callback',
-                method: 'POST',
-                timeout: 20, // ~4 rings
-                callerId: req.body.To
-            });
-            
-            dial.number(REP_PHONE);
-            break;
-
-        case '2':
-            // Send WhatsApp
-            console.log('📱 Sending WhatsApp...');
-            
-            twiml.say({
-                language: 'he-IL'
-            }, getMessage('IVR_whatsapp_sent'));
-
-            sendMissedCallWhatsApp(callerNumber, 'missed').catch(err => {
-                console.error('Failed to send WhatsApp:', err.message);
-            });
-
-            updateCallRecord(callerNumber, { outcome: 'menu_whatsapp' }).catch(err => {
-                console.error('Failed to update call record:', err.message);
-            });
-
-            twiml.hangup();
-            break;
-
-        default:
-            // Invalid input - redirect to incoming
-            twiml.say({
-                language: 'he-IL'
-            }, 'בחירה לא תקינה.');
-            twiml.redirect('/api/voice/incoming');
     }
 
     res.type('text/xml');
@@ -176,13 +120,11 @@ router.post('/dial-callback', async (req, res) => {
 
     console.log(`📞 Dial callback - Status: ${dialStatus}`);
 
-    // Check if call was answered
     if (dialStatus === 'completed') {
         // Call was answered and finished normally
         console.log('✅ Call completed successfully');
         
-        // Update call tracking with success
-        updateCallRecord(callerNumber, { 
+        callRepository.updateByCallerNumber(callerNumber, { 
             outcome: 'answered',
             duration: dialDuration
         }).catch(err => {
@@ -207,13 +149,12 @@ router.post('/dial-callback', async (req, res) => {
             language: 'he-IL'
         }, getMessage('IVR_no_answer'));
 
-        // If no input after timeout, hang up (caller didn't press 9)
+        // If no input after timeout, hang up
         twiml.say({
             language: 'he-IL'
-        }, 'תודה שהתקשרת. להתראות.');
+        }, getMessage('IVR_goodbye'));
         
-        // Update call tracking
-        updateCallRecord(callerNumber, { outcome: 'no_answer_hangup' }).catch(err => {
+        callRepository.updateByCallerNumber(callerNumber, { outcome: 'no_answer_hangup' }).catch(err => {
             console.error('Failed to update call record:', err.message);
         });
         
@@ -236,7 +177,6 @@ router.post('/closed-menu', async (req, res) => {
     console.log(`📞 Closed menu selection: ${digit} from ${callerNumber}`);
 
     if (digit === '9') {
-        // Send WhatsApp
         console.log('📱 Sending WhatsApp (office closed, pressed 9)...');
         
         twiml.say({
@@ -248,25 +188,23 @@ router.post('/closed-menu', async (req, res) => {
             console.error('Failed to send closed-hours WhatsApp:', err.message);
         });
 
-        // Update call tracking
-        updateCallRecord(callerNumber, { outcome: 'closed_hours_whatsapp' }).catch(err => {
+        callRepository.updateByCallerNumber(callerNumber, { outcome: 'closed_hours_whatsapp' }).catch(err => {
             console.error('Failed to update call record:', err.message);
         });
 
         twiml.hangup();
     } else {
-        // Any other input - send WhatsApp anyway (office is closed)
         console.log('📞 Invalid input when closed, sending WhatsApp anyway...');
         
         twiml.say({
             language: 'he-IL'
-        }, 'שולחים לך הודעת וואטסאפ. להתראות.');
+        }, getMessage('IVR_closed_sending_whatsapp'));
 
         sendMissedCallWhatsApp(callerNumber, 'closed').catch(err => {
             console.error('Failed to send closed-hours WhatsApp:', err.message);
         });
 
-        updateCallRecord(callerNumber, { outcome: 'closed_hours_whatsapp' }).catch(err => {
+        callRepository.updateByCallerNumber(callerNumber, { outcome: 'closed_hours_whatsapp' }).catch(err => {
             console.error('Failed to update call record:', err.message);
         });
 
@@ -289,7 +227,6 @@ router.post('/no-answer-menu', async (req, res) => {
     console.log(`📞 No-answer menu selection: ${digit} from ${callerNumber}`);
 
     if (digit === '9') {
-        // Send WhatsApp
         console.log('📱 Sending WhatsApp after no-answer...');
         
         twiml.say({
@@ -301,22 +238,19 @@ router.post('/no-answer-menu', async (req, res) => {
             console.error('Failed to send no-answer WhatsApp:', err.message);
         });
 
-        // Update call tracking
-        updateCallRecord(callerNumber, { outcome: 'no_answer_whatsapp' }).catch(err => {
+        callRepository.updateByCallerNumber(callerNumber, { outcome: 'no_answer_whatsapp' }).catch(err => {
             console.error('Failed to update call record:', err.message);
         });
 
         twiml.hangup();
     } else {
-        // Any other input - thank and hang up
         console.log('📞 Invalid input, ending call...');
         
         twiml.say({
             language: 'he-IL'
-        }, 'תודה שהתקשרת. להתראות.');
+        }, getMessage('IVR_goodbye'));
 
-        // Update call tracking
-        updateCallRecord(callerNumber, { outcome: 'no_answer_hangup' }).catch(err => {
+        callRepository.updateByCallerNumber(callerNumber, { outcome: 'no_answer_hangup' }).catch(err => {
             console.error('Failed to update call record:', err.message);
         });
 
@@ -349,7 +283,6 @@ router.post('/status', (req, res) => {
 router.get('/status', async (req, res) => {
     try {
         const officeOpen = await isOfficeOpen();
-        const { getAllMessages } = require('../services/ivr');
         
         res.json({
             success: true,
@@ -366,4 +299,3 @@ router.get('/status', async (req, res) => {
 });
 
 module.exports = router;
-

@@ -5,6 +5,7 @@
 
 const { google } = require('googleapis');
 const path = require('path');
+const { config } = require('../../config');
 
 let authClient = null;
 
@@ -18,8 +19,8 @@ async function getAuthClient() {
     }
 
     try {
-        const keyPath = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH || './service-account-key.json';
-        const absolutePath = path.resolve(__dirname, '..', keyPath);
+        const keyPath = config.google.serviceAccountKeyPath;
+        const absolutePath = path.resolve(__dirname, '../..', keyPath);
         
         const auth = new google.auth.GoogleAuth({
             keyFile: absolutePath,
@@ -60,4 +61,3 @@ module.exports = {
     getSheetsClient,
     getCalendarClient
 };
-

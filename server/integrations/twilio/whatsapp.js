@@ -3,21 +3,20 @@
  * Handles sending WhatsApp messages via Twilio
  */
 
-// Twilio client will be initialized when credentials are available
+const twilio = require('twilio');
+const { config, isTwilioConfigured } = require('../../config');
+
+// Twilio client
 let twilioClient = null;
 
 function getTwilioClient() {
     if (!twilioClient) {
-        const accountSid = process.env.TWILIO_ACCOUNT_SID;
-        const authToken = process.env.TWILIO_AUTH_TOKEN;
-        
-        if (!accountSid || !authToken) {
+        if (!isTwilioConfigured()) {
             console.warn('⚠️ Twilio credentials not configured');
             return null;
         }
         
-        const twilio = require('twilio');
-        twilioClient = twilio(accountSid, authToken);
+        twilioClient = twilio(config.twilio.accountSid, config.twilio.authToken);
     }
     return twilioClient;
 }
@@ -46,15 +45,12 @@ function formatWhatsAppNumber(phone) {
 
 /**
  * Send WhatsApp message to a phone number
- * Uses template message for business-initiated conversations
- * 
  * @param {string} to - Phone number
- * @param {string} templateName - Name of approved template (optional)
- * @param {object} templateVars - Variables for template (optional)
+ * @param {string} message - Message text
  */
 async function sendWhatsAppMessage(to, message) {
     const client = getTwilioClient();
-    const whatsappNumber = process.env.TWILIO_WHATSAPP_NUMBER;
+    const whatsappNumber = config.twilio.whatsappNumber;
     
     if (!client || !whatsappNumber) {
         // Mock mode - just log
@@ -68,7 +64,9 @@ async function sendWhatsAppMessage(to, message) {
 
     try {
         const formattedTo = formatWhatsAppNumber(to);
-        const formattedFrom = `whatsapp:${whatsappNumber}`;
+        const formattedFrom = whatsappNumber.startsWith('whatsapp:') 
+            ? whatsappNumber 
+            : `whatsapp:${whatsappNumber}`;
 
         const result = await client.messages.create({
             body: message,
@@ -94,7 +92,7 @@ async function sendWhatsAppMessage(to, message) {
  */
 async function sendWhatsAppTemplate(to, templateSid, variables = {}) {
     const client = getTwilioClient();
-    const whatsappNumber = process.env.TWILIO_WHATSAPP_NUMBER;
+    const whatsappNumber = config.twilio.whatsappNumber;
     
     if (!client || !whatsappNumber) {
         console.log('═══════════════════════════════════════');
@@ -108,7 +106,9 @@ async function sendWhatsAppTemplate(to, templateSid, variables = {}) {
 
     try {
         const formattedTo = formatWhatsAppNumber(to);
-        const formattedFrom = `whatsapp:${whatsappNumber}`;
+        const formattedFrom = whatsappNumber.startsWith('whatsapp:') 
+            ? whatsappNumber 
+            : `whatsapp:${whatsappNumber}`;
 
         const result = await client.messages.create({
             from: formattedFrom,
@@ -133,7 +133,7 @@ async function sendWhatsAppTemplate(to, templateSid, variables = {}) {
  * Send missed call WhatsApp notification with bot_start message
  */
 async function sendMissedCallWhatsApp(phoneNumber, reason = 'missed') {
-    // Import bot start message
+    // Import bot start message lazily to avoid circular dependency
     const { getBotStartMessage } = require('./whatsappBot');
     const startMessage = getBotStartMessage();
     
@@ -153,9 +153,9 @@ async function sendMissedCallWhatsApp(phoneNumber, reason = 'missed') {
 }
 
 module.exports = {
+    getTwilioClient,
     sendWhatsAppMessage,
     sendWhatsAppTemplate,
     sendMissedCallWhatsApp,
     formatWhatsAppNumber
 };
-

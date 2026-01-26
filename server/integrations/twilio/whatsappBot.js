@@ -9,24 +9,21 @@
  * 3b. Leave a Message → Collects message → bot_thank_you
  */
 
-const { getBookingSettings } = require('./googleSheets');
-const { saveInquiry } = require('./inquiries');
+const { getBookingSettings } = require('../google/sheets');
+const { BOT_STATES, PREFERRED_TIME, HEBREW_DAYS, DAY_ORDER, CACHE_DURATION } = require('../../constants');
 
 // Bot messages in Hebrew
 const BOT_MESSAGES = {
-    // Initial message sent when redirecting from IVR
     bot_start: `שלום! 👋
 
 אנחנו שמחים שפניתם אלינו.
 לחצו על הכפתור למטה כדי להתחיל.`,
 
-    // Main menu
     bot_menu: `מה תרצו לעשות?
 
 1️⃣ מידע על המשרד
 2️⃣ השארת הודעה`,
 
-    // Office info - will be dynamically filled
     bot_office_info: `🏢 *מידע על המשרד*
 
 📍 שעות פעילות:
@@ -34,10 +31,8 @@ const BOT_MESSAGES = {
 
 📞 ניתן ליצור קשר גם בטלפון בשעות הפעילות.`,
 
-    // Request for message
     bot_ask_message: `📝 אנא כתבו את ההודעה שלכם ונציג יחזור אליכם בהקדם:`,
 
-    // Ask for preferred time to call back
     bot_ask_time: `🕐 מתי נוח לכם שנחזור אליכם?
 
 1️⃣ בוקר (08:00-12:00)
@@ -45,56 +40,36 @@ const BOT_MESSAGES = {
 3️⃣ ערב (16:00-20:00)
 4️⃣ בכל שעה`,
 
-    // Thank you after message received
     bot_thank_you: `✅ תודה רבה!
 
 ההודעה שלכם התקבלה ונציג יחזור אליכם בהקדם האפשרי.
 
 שיהיה לכם יום נפלא! 🌟`,
 
-    // Invalid input
     bot_invalid: `לא הבנתי את הבקשה.
 אנא בחרו מהאפשרויות למטה.`,
 
-    // Error message
     bot_error: `אירעה שגיאה. אנא נסו שוב מאוחר יותר.`
 };
 
-// Track conversation state per user (phone number -> state)
+// Track conversation state per user
 const conversationState = new Map();
-
-// State constants
-const STATES = {
-    INITIAL: 'initial',
-    MENU: 'menu',
-    AWAITING_MESSAGE: 'awaiting_message',
-    AWAITING_PREFERRED_TIME: 'awaiting_preferred_time',
-    COMPLETED: 'completed'
-};
 
 // Preferred time options mapping
 const PREFERRED_TIME_OPTIONS = {
-    '1': 'morning',
-    'morning': 'morning',
-    'בוקר': 'morning',
-    '2': 'noon',
-    'noon': 'noon',
-    'צהריים': 'noon',
-    '3': 'evening',
-    'evening': 'evening',
-    'ערב': 'evening',
-    '4': 'anytime',
-    'anytime': 'anytime',
-    'כל שעה': 'anytime',
-    'בכל שעה': 'anytime'
-};
-
-// Hebrew display names for preferred times
-const PREFERRED_TIME_DISPLAY = {
-    'morning': 'בוקר',
-    'noon': 'צהריים',
-    'evening': 'ערב',
-    'anytime': 'בכל שעה'
+    '1': PREFERRED_TIME.MORNING,
+    'morning': PREFERRED_TIME.MORNING,
+    'בוקר': PREFERRED_TIME.MORNING,
+    '2': PREFERRED_TIME.NOON,
+    'noon': PREFERRED_TIME.NOON,
+    'צהריים': PREFERRED_TIME.NOON,
+    '3': PREFERRED_TIME.EVENING,
+    'evening': PREFERRED_TIME.EVENING,
+    'ערב': PREFERRED_TIME.EVENING,
+    '4': PREFERRED_TIME.ANYTIME,
+    'anytime': PREFERRED_TIME.ANYTIME,
+    'כל שעה': PREFERRED_TIME.ANYTIME,
+    'בכל שעה': PREFERRED_TIME.ANYTIME
 };
 
 /**
@@ -104,26 +79,15 @@ async function formatWorkingHours() {
     try {
         const settings = await getBookingSettings();
         const workingHours = settings.workingHours;
-        
-        const dayNames = {
-            sunday: 'ראשון',
-            monday: 'שני',
-            tuesday: 'שלישי',
-            wednesday: 'רביעי',
-            thursday: 'חמישי',
-            friday: 'שישי',
-            saturday: 'שבת'
-        };
 
         const lines = [];
-        const dayOrder = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
         
-        for (const day of dayOrder) {
+        for (const day of DAY_ORDER) {
             const hours = workingHours[day];
             if (hours) {
-                lines.push(`יום ${dayNames[day]}: ${hours.start} - ${hours.end}`);
+                lines.push(`יום ${HEBREW_DAYS[day]}: ${hours.start} - ${hours.end}`);
             } else {
-                lines.push(`יום ${dayNames[day]}: סגור`);
+                lines.push(`יום ${HEBREW_DAYS[day]}: סגור`);
             }
         }
         
@@ -140,7 +104,7 @@ async function formatWorkingHours() {
 function getState(phoneNumber) {
     if (!conversationState.has(phoneNumber)) {
         conversationState.set(phoneNumber, {
-            state: STATES.INITIAL,
+            state: BOT_STATES.INITIAL,
             lastActivity: Date.now()
         });
     }
@@ -162,11 +126,10 @@ function setState(phoneNumber, newState, data = {}) {
  * Clear old conversations (cleanup after 1 hour of inactivity)
  */
 function cleanupOldConversations() {
-    const ONE_HOUR = 60 * 60 * 1000;
     const now = Date.now();
     
     for (const [phone, data] of conversationState.entries()) {
-        if (now - data.lastActivity > ONE_HOUR) {
+        if (now - data.lastActivity > CACHE_DURATION.CONVERSATION) {
             conversationState.delete(phone);
         }
     }
@@ -177,9 +140,12 @@ setInterval(cleanupOldConversations, 30 * 60 * 1000);
 
 /**
  * Generate response based on conversation state and user input
- * Returns: { message, buttons?, state }
+ * @param {string} phoneNumber - User's phone number
+ * @param {string} messageBody - Message content
+ * @param {string} senderName - Sender's profile name
+ * @param {Function} saveInquiryFn - Function to save inquiry (injected to avoid circular dep)
  */
-async function handleIncomingMessage(phoneNumber, messageBody, senderName = '') {
+async function handleIncomingMessage(phoneNumber, messageBody, senderName = '', saveInquiryFn = null) {
     const currentState = getState(phoneNumber);
     const input = messageBody.trim().toLowerCase();
     
@@ -187,22 +153,19 @@ async function handleIncomingMessage(phoneNumber, messageBody, senderName = '') 
 
     try {
         switch (currentState.state) {
-            case STATES.INITIAL:
-                // User clicked "Start" button or sent initial message
-                setState(phoneNumber, STATES.MENU);
+            case BOT_STATES.INITIAL:
+                setState(phoneNumber, BOT_STATES.MENU);
                 return {
                     message: BOT_MESSAGES.bot_menu,
                     buttons: [
                         { id: 'office_info', title: 'מידע על המשרד' },
                         { id: 'leave_message', title: 'השארת הודעה' }
                     ],
-                    state: STATES.MENU
+                    state: BOT_STATES.MENU
                 };
 
-            case STATES.MENU:
-                // User selected menu option
+            case BOT_STATES.MENU:
                 if (input === '1' || input === 'office_info' || input.includes('מידע')) {
-                    // Show office info
                     const hours = await formatWorkingHours();
                     const message = BOT_MESSAGES.bot_office_info.replace('{hours}', hours);
                     
@@ -212,43 +175,39 @@ async function handleIncomingMessage(phoneNumber, messageBody, senderName = '') 
                             { id: 'back_menu', title: 'חזרה לתפריט' },
                             { id: 'leave_message', title: 'השארת הודעה' }
                         ],
-                        state: STATES.MENU
+                        state: BOT_STATES.MENU
                     };
                 } 
                 else if (input === '2' || input === 'leave_message' || input.includes('הודעה')) {
-                    // Ask for message
-                    setState(phoneNumber, STATES.AWAITING_MESSAGE, { name: senderName });
+                    setState(phoneNumber, BOT_STATES.AWAITING_MESSAGE, { name: senderName });
                     return {
                         message: BOT_MESSAGES.bot_ask_message,
-                        state: STATES.AWAITING_MESSAGE
+                        state: BOT_STATES.AWAITING_MESSAGE
                     };
                 }
                 else if (input === 'back_menu' || input.includes('חזרה') || input.includes('תפריט')) {
-                    // Back to menu
                     return {
                         message: BOT_MESSAGES.bot_menu,
                         buttons: [
                             { id: 'office_info', title: 'מידע על המשרד' },
                             { id: 'leave_message', title: 'השארת הודעה' }
                         ],
-                        state: STATES.MENU
+                        state: BOT_STATES.MENU
                     };
                 }
                 else {
-                    // Invalid input, show menu again
                     return {
                         message: BOT_MESSAGES.bot_invalid,
                         buttons: [
                             { id: 'office_info', title: 'מידע על המשרד' },
                             { id: 'leave_message', title: 'השארת הודעה' }
                         ],
-                        state: STATES.MENU
+                        state: BOT_STATES.MENU
                     };
                 }
 
-            case STATES.AWAITING_MESSAGE:
-                // User sent their message - store it and ask for preferred time
-                setState(phoneNumber, STATES.AWAITING_PREFERRED_TIME, { 
+            case BOT_STATES.AWAITING_MESSAGE:
+                setState(phoneNumber, BOT_STATES.AWAITING_PREFERRED_TIME, { 
                     name: currentState.name || senderName || 'WhatsApp User',
                     message: messageBody 
                 });
@@ -260,73 +219,60 @@ async function handleIncomingMessage(phoneNumber, messageBody, senderName = '') 
                         { id: 'time_evening', title: 'ערב' },
                         { id: 'time_anytime', title: 'בכל שעה' }
                     ],
-                    state: STATES.AWAITING_PREFERRED_TIME
+                    state: BOT_STATES.AWAITING_PREFERRED_TIME
                 };
 
-            case STATES.AWAITING_PREFERRED_TIME:
-                // User selected preferred time - now save the inquiry
-                let preferredTime = 'anytime';
+            case BOT_STATES.AWAITING_PREFERRED_TIME:
+                let preferredTime = PREFERRED_TIME.ANYTIME;
                 
-                // Check for button payload or text input
                 const timeInput = input.replace('time_', '');
                 if (PREFERRED_TIME_OPTIONS[timeInput]) {
                     preferredTime = PREFERRED_TIME_OPTIONS[timeInput];
                 }
 
-                const inquiry = {
-                    name: currentState.name || senderName || 'WhatsApp User',
-                    phone: phoneNumber,
-                    message: currentState.message || '',
-                    preferredTime: preferredTime,
-                    source: 'whatsapp_bot'
-                };
+                // Save inquiry if function provided
+                if (saveInquiryFn) {
+                    const inquiry = {
+                        name: currentState.name || senderName || 'WhatsApp User',
+                        phone: phoneNumber,
+                        message: currentState.message || '',
+                        preferredTime: preferredTime,
+                        source: 'whatsapp_bot'
+                    };
 
-                await saveInquiry(inquiry);
-                console.log(`✅ Inquiry saved from WhatsApp: ${phoneNumber} (preferred: ${preferredTime})`);
+                    await saveInquiryFn(inquiry);
+                    console.log(`✅ Inquiry saved from WhatsApp: ${phoneNumber} (preferred: ${preferredTime})`);
+                }
 
-                setState(phoneNumber, STATES.COMPLETED);
+                setState(phoneNumber, BOT_STATES.COMPLETED);
                 return {
                     message: BOT_MESSAGES.bot_thank_you,
                     buttons: [
                         { id: 'start_new', title: 'התחל שיחה חדשה' }
                     ],
-                    state: STATES.COMPLETED
+                    state: BOT_STATES.COMPLETED
                 };
 
-            case STATES.COMPLETED:
-                // User wants to start new conversation
-                if (input === 'start_new' || input.includes('חדש') || input.includes('התחל')) {
-                    setState(phoneNumber, STATES.MENU);
-                    return {
-                        message: BOT_MESSAGES.bot_menu,
-                        buttons: [
-                            { id: 'office_info', title: 'מידע על המשרד' },
-                            { id: 'leave_message', title: 'השארת הודעה' }
-                        ],
-                        state: STATES.MENU
-                    };
-                }
-                // Any other message also restarts
-                setState(phoneNumber, STATES.MENU);
+            case BOT_STATES.COMPLETED:
+                setState(phoneNumber, BOT_STATES.MENU);
                 return {
                     message: BOT_MESSAGES.bot_menu,
                     buttons: [
                         { id: 'office_info', title: 'מידע על המשרד' },
                         { id: 'leave_message', title: 'השארת הודעה' }
                     ],
-                    state: STATES.MENU
+                    state: BOT_STATES.MENU
                 };
 
             default:
-                // Reset to menu if unknown state
-                setState(phoneNumber, STATES.MENU);
+                setState(phoneNumber, BOT_STATES.MENU);
                 return {
                     message: BOT_MESSAGES.bot_menu,
                     buttons: [
                         { id: 'office_info', title: 'מידע על המשרד' },
                         { id: 'leave_message', title: 'השארת הודעה' }
                     ],
-                    state: STATES.MENU
+                    state: BOT_STATES.MENU
                 };
         }
     } catch (error) {
@@ -370,7 +316,5 @@ module.exports = {
     getBotStartMessage,
     resetUserState,
     getAllBotMessages,
-    BOT_MESSAGES,
-    STATES
+    BOT_MESSAGES
 };
-

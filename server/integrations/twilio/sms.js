@@ -4,21 +4,19 @@
  */
 
 const twilio = require('twilio');
+const { config, isTwilioConfigured } = require('../../config');
 
 // Initialize Twilio client
 let twilioClient = null;
 
 function getTwilioClient() {
     if (!twilioClient) {
-        const accountSid = process.env.TWILIO_ACCOUNT_SID;
-        const authToken = process.env.TWILIO_AUTH_TOKEN;
-        
-        if (!accountSid || !authToken) {
+        if (!isTwilioConfigured()) {
             console.warn('⚠️ Twilio credentials not configured');
             return null;
         }
         
-        twilioClient = twilio(accountSid, authToken);
+        twilioClient = twilio(config.twilio.accountSid, config.twilio.authToken);
     }
     return twilioClient;
 }
@@ -30,47 +28,36 @@ function getTwilioClient() {
  * @returns {Object} - Message details or null if failed
  */
 async function sendSMS(to, message) {
-    // TODO: Uncomment when Twilio is configured
-    // const client = getTwilioClient();
-    // 
-    // if (!client) {
-    //     console.log('📱 SMS (mock):', { to, message });
-    //     return { mock: true, to, message };
-    // }
-    //
-    // try {
-    //     const fromNumber = process.env.TWILIO_PHONE_NUMBER;
-    //     
-    //     if (!fromNumber) {
-    //         console.warn('⚠️ TWILIO_PHONE_NUMBER not configured');
-    //         return null;
-    //     }
-    //
-    //     const result = await client.messages.create({
-    //         body: message,
-    //         from: fromNumber,
-    //         to: to
-    //     });
-    //
-    //     console.log(`📱 SMS sent to ${to}: ${result.sid}`);
-    //     return {
-    //         sid: result.sid,
-    //         to: to,
-    //         status: result.status
-    //     };
-    // } catch (error) {
-    //     console.error('Error sending SMS:', error.message);
-    //     throw new Error(`Could not send SMS: ${error.message}`);
-    // }
-
-    // Mock mode - just log the SMS
-    console.log('═══════════════════════════════════════');
-    console.log('📱 SMS (mock mode - Twilio not configured)');
-    console.log(`📞 To: ${to}`);
-    console.log(`💬 Message: ${message}`);
-    console.log('═══════════════════════════════════════');
+    const client = getTwilioClient();
     
-    return { mock: true, to, message };
+    if (!client || !config.twilio.phoneNumber) {
+        // Mock mode - just log the SMS
+        console.log('═══════════════════════════════════════');
+        console.log('📱 SMS (mock mode - Twilio not configured)');
+        console.log(`📞 To: ${to}`);
+        console.log(`💬 Message: ${message}`);
+        console.log('═══════════════════════════════════════');
+        
+        return { mock: true, to, message };
+    }
+
+    try {
+        const result = await client.messages.create({
+            body: message,
+            from: config.twilio.phoneNumber,
+            to: to
+        });
+
+        console.log(`📱 SMS sent to ${to}: ${result.sid}`);
+        return {
+            sid: result.sid,
+            to: to,
+            status: result.status
+        };
+    } catch (error) {
+        console.error('Error sending SMS:', error.message);
+        throw new Error(`Could not send SMS: ${error.message}`);
+    }
 }
 
 /**
@@ -126,8 +113,8 @@ function buildReminderMessage(appointment, confirmLink, settings) {
 }
 
 module.exports = {
+    getTwilioClient,
     sendSMS,
     formatPhoneNumber,
     buildReminderMessage
 };
-

@@ -3,9 +3,10 @@
  * Handles calendar availability and event creation
  */
 
-const { getCalendarClient } = require('./googleAuth');
+const { getCalendarClient } = require('./auth');
+const { config } = require('../../config');
 
-const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID;
+const CALENDAR_ID = config.google.calendarId;
 
 /**
  * Get busy times from Google Calendar for a date range
@@ -155,11 +156,11 @@ Booked via website
             `.trim(),
             start: {
                 dateTime: startDateTime.toISOString(),
-                timeZone: process.env.TIMEZONE || 'UTC'
+                timeZone: config.timezone
             },
             end: {
                 dateTime: endDateTime.toISOString(),
-                timeZone: process.env.TIMEZONE || 'UTC'
+                timeZone: config.timezone
             },
             reminders: {
                 useDefault: false,
@@ -220,4 +221,3 @@ module.exports = {
     getAvailableSlotsForRange,
     createBookingEvent
 };
-

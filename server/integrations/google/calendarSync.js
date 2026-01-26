@@ -4,11 +4,11 @@
  * Calendar is the source of truth
  */
 
-const { getCalendarClient } = require('./googleAuth');
-const { getSheetsClient } = require('./googleAuth');
+const { getCalendarClient, getSheetsClient } = require('./auth');
+const { config } = require('../../config');
 
-const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID;
-const SHEET_ID = process.env.GOOGLE_SHEET_ID;
+const CALENDAR_ID = config.google.calendarId;
+const SHEET_ID = config.google.sheetId;
 const APPOINTMENTS_SHEET = 'Appointments';
 
 /**
@@ -25,7 +25,7 @@ function getTodayStart() {
  */
 function getTomorrowEnd() {
     const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 2); // Day after tomorrow at midnight
+    tomorrow.setDate(tomorrow.getDate() + 2);
     tomorrow.setHours(0, 0, 0, 0);
     return tomorrow;
 }
@@ -58,7 +58,7 @@ async function fetchCalendarEvents() {
             description: event.description || '',
             start: event.start?.dateTime || event.start?.date,
             end: event.end?.dateTime || event.end?.date,
-            status: event.status // 'confirmed', 'tentative', 'cancelled'
+            status: event.status
         }));
     } catch (error) {
         console.error('Error fetching calendar events:', error.message);
@@ -79,19 +79,15 @@ function parseEventDescription(description) {
 
     if (!description) return details;
 
-    // Parse client name from summary or description
     const clientMatch = description.match(/Client:\s*(.+)/i);
     if (clientMatch) details.clientName = clientMatch[1].trim();
 
-    // Parse email
     const emailMatch = description.match(/Email:\s*([^\s\n]+)/i);
     if (emailMatch) details.email = emailMatch[1].trim();
 
-    // Parse phone
     const phoneMatch = description.match(/Phone:\s*([^\n]+)/i);
     if (phoneMatch) details.phone = phoneMatch[1].trim();
 
-    // Parse service
     const serviceMatch = description.match(/Service:\s*(.+)/i);
     if (serviceMatch) details.service = serviceMatch[1].trim();
 
@@ -113,7 +109,7 @@ async function getSheetAppointments() {
         const rows = response.data.values || [];
         
         return rows.map((row, index) => ({
-            rowIndex: index + 2, // Actual row number in sheet
+            rowIndex: index + 2,
             bookingId: row[0] || '',
             date: row[1] || '',
             time: row[2] || '',
@@ -133,54 +129,9 @@ async function getSheetAppointments() {
 }
 
 /**
- * Add a new appointment to the sheet
- */
-async function addAppointmentToSheet(appointment) {
-    const sheets = await getSheetsClient();
-    
-    const row = [
-        appointment.bookingId,
-        appointment.date,
-        appointment.time,
-        appointment.clientName,
-        appointment.phone,
-        appointment.email,
-        appointment.service,
-        appointment.status || 'new',
-        '', // Reminder Sent
-        '', // Response Time
-        'Synced from calendar' // Notes
-    ];
-
-    await sheets.spreadsheets.values.append({
-        spreadsheetId: SHEET_ID,
-        range: `${APPOINTMENTS_SHEET}!A:K`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [row] }
-    });
-}
-
-/**
- * Update appointment status in sheet
- */
-async function updateSheetAppointmentStatus(rowIndex, status, notes = '') {
-    const sheets = await getSheetsClient();
-    
-    await sheets.spreadsheets.values.update({
-        spreadsheetId: SHEET_ID,
-        range: `${APPOINTMENTS_SHEET}!H${rowIndex}:K${rowIndex}`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: {
-            values: [[status, '', '', notes]]
-        }
-    });
-}
-
-/**
  * Generate a booking ID from event ID
  */
 function generateBookingIdFromEvent(eventId) {
-    // Use first 16 chars of event ID as booking ID
     return eventId.substring(0, 16);
 }
 
@@ -191,7 +142,6 @@ async function clearAppointmentsSheet() {
     const sheets = await getSheetsClient();
     
     try {
-        // Get the current data to know how many rows to clear
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: SHEET_ID,
             range: `${APPOINTMENTS_SHEET}!A:K`
@@ -200,7 +150,6 @@ async function clearAppointmentsSheet() {
         const rowCount = response.data.values?.length || 1;
         
         if (rowCount > 1) {
-            // Clear all data except header (row 1)
             await sheets.spreadsheets.values.clear({
                 spreadsheetId: SHEET_ID,
                 range: `${APPOINTMENTS_SHEET}!A2:K${rowCount}`
@@ -245,48 +194,37 @@ async function writeAppointmentsToSheet(appointments) {
 /**
  * Sync calendar events with Appointments sheet
  * Calendar is the source of truth
- * Only keeps today and tomorrow, sorted by date/time ascending
  */
 async function syncCalendarToSheet() {
     console.log('🔄 Starting calendar sync (today + tomorrow only)...');
     
     try {
-        // Fetch events for today and tomorrow
         const calendarEvents = await fetchCalendarEvents();
         
-        // Get existing sheet data to preserve status/reminder info
         const existingAppointments = await getSheetAppointments();
         const existingMap = new Map();
         existingAppointments.forEach(apt => {
-            // Key by date + time
             const key = `${apt.date}_${apt.time}`;
             existingMap.set(key, apt);
         });
 
-        // Build new appointments list from calendar
         const appointments = [];
         
         for (const event of calendarEvents) {
-            // Skip all-day events or events without proper time
             if (!event.start || !event.start.includes('T')) continue;
-            
-            // Skip cancelled events in calendar
             if (event.status === 'cancelled') continue;
 
-            // Extract date and time
             const startDate = new Date(event.start);
             const date = startDate.toISOString().split('T')[0];
             const time = startDate.toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
                 hour12: true,
-                timeZone: process.env.TIMEZONE || 'Asia/Jerusalem'
+                timeZone: config.timezone
             });
 
-            // Parse details from description
             const details = parseEventDescription(event.description);
             
-            // Extract client name from summary if not in description
             if (!details.clientName && event.summary) {
                 const nameMatch = event.summary.match(/Meeting with (.+)/i);
                 if (nameMatch) {
@@ -294,10 +232,7 @@ async function syncCalendarToSheet() {
                 }
             }
 
-            // Generate booking ID from event ID
             const bookingId = generateBookingIdFromEvent(event.eventId);
-            
-            // Check if we have existing data for this appointment
             const key = `${date}_${time}`;
             const existing = existingMap.get(key);
 
@@ -305,7 +240,7 @@ async function syncCalendarToSheet() {
                 bookingId: existing?.bookingId || bookingId,
                 date,
                 time,
-                sortKey: startDate.getTime(), // For sorting
+                sortKey: startDate.getTime(),
                 clientName: details.clientName || event.summary || 'Unknown',
                 phone: details.phone || existing?.phone || '',
                 email: details.email || existing?.email || '',
@@ -317,10 +252,8 @@ async function syncCalendarToSheet() {
             });
         }
 
-        // Sort by date and time ascending (closest first)
         appointments.sort((a, b) => a.sortKey - b.sortKey);
 
-        // Clear the sheet and write fresh data
         await clearAppointmentsSheet();
         await writeAppointmentsToSheet(appointments);
 
@@ -339,12 +272,10 @@ async function syncCalendarToSheet() {
 
 /**
  * Schedule periodic sync
- * @param {number} intervalMinutes - How often to sync (default: 60 minutes)
  */
 function schedulePeriodicSync(intervalMinutes = 60) {
     const schedule = require('node-schedule');
     
-    // Run every X minutes
     const rule = new schedule.RecurrenceRule();
     rule.minute = new schedule.Range(0, 59, intervalMinutes);
     rule.tz = 'Asia/Jerusalem';
@@ -365,6 +296,6 @@ function schedulePeriodicSync(intervalMinutes = 60) {
 module.exports = {
     fetchCalendarEvents,
     syncCalendarToSheet,
-    schedulePeriodicSync
+    schedulePeriodicSync,
+    getSheetAppointments
 };
-

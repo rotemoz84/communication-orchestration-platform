@@ -3,14 +3,15 @@
  * Reads booking settings from Google Sheets
  */
 
-const { getSheetsClient } = require('./googleAuth');
+const { getSheetsClient } = require('./auth');
+const { config } = require('../../config');
+const { CACHE_DURATION } = require('../../constants');
 
-const SHEET_ID = process.env.GOOGLE_SHEET_ID;
+const SHEET_ID = config.google.sheetId;
 
-// Cache settings for 5 minutes to reduce API calls
+// Cache settings to reduce API calls
 let settingsCache = null;
 let cacheTimestamp = null;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 /**
  * Parse time string (HH:MM) to minutes since midnight
@@ -35,16 +36,6 @@ async function getWorkingHours(sheets) {
         const rows = response.data.values || [];
         const workingHours = {};
 
-        const dayMapping = {
-            'sunday': 0,
-            'monday': 1,
-            'tuesday': 2,
-            'wednesday': 3,
-            'thursday': 4,
-            'friday': 5,
-            'saturday': 6
-        };
-
         rows.forEach(row => {
             const [day, start, end, active] = row;
             if (day) {
@@ -52,9 +43,6 @@ async function getWorkingHours(sheets) {
                 const status = active?.toUpperCase().trim() || 'DEFAULT';
                 
                 // Active column can be: OPEN, CLOSED, or DEFAULT
-                // OPEN = always open (ignore hours)
-                // CLOSED = always closed (ignore hours)
-                // DEFAULT = check the hours
                 workingHours[dayLower] = {
                     start: start?.trim() || null,
                     end: end?.trim() || null,
@@ -112,7 +100,6 @@ async function getMeetingTypes(sheets) {
 /**
  * Read general settings from the "Settings" sheet
  * Expected format: Setting Name | Value (two columns)
- * Note: Office status is now controlled per-day in Working Hours tab
  */
 async function getGeneralSettings(sheets) {
     try {
@@ -124,11 +111,9 @@ async function getGeneralSettings(sheets) {
         const rows = response.data.values || [];
         const settings = {};
 
-        // Add any future settings here
         rows.forEach(row => {
             const [name, value] = row;
             if (name && value !== undefined) {
-                // Store settings as key-value pairs
                 settings[name.toLowerCase().trim()] = value;
             }
         });
@@ -146,7 +131,7 @@ async function getGeneralSettings(sheets) {
  */
 async function getBookingSettings() {
     // Check cache
-    if (settingsCache && cacheTimestamp && (Date.now() - cacheTimestamp < CACHE_DURATION)) {
+    if (settingsCache && cacheTimestamp && (Date.now() - cacheTimestamp < CACHE_DURATION.SETTINGS)) {
         return settingsCache;
     }
 
@@ -186,6 +171,6 @@ function clearCache() {
 
 module.exports = {
     getBookingSettings,
-    clearCache
+    clearCache,
+    getSheetsClient
 };
-

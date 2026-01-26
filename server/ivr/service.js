@@ -1,26 +1,10 @@
 /**
  * IVR Service
- * Handles voice call logic, business hours check, and message routing
+ * Handles voice call logic and business hours check
  */
 
-const { getBookingSettings } = require('./googleSheets');
-
-// Message placeholders - will be replaced with actual recordings or TTS
-const MESSAGES = {
-    // IVR_no_answer: Rep didn't answer after 4 rings
-    // TODO: Update this message with user-provided content
-    IVR_no_answer: `
-        מצטערים, אין מענה כרגע.
-        לקבלת הודעה בוואטסאפ, הקישו 9.
-    `,
-
-    // IVR_whatsapp_sent: WhatsApp sent confirmation
-    IVR_whatsapp_sent: `
-        תודה! שלחנו לך הודעת וואטסאפ.
-        נציג יחזור אליך בהקדם.
-        להתראות.
-    `
-};
+const { getBookingSettings } = require('../integrations/google/sheets');
+const { config } = require('../config');
 
 /**
  * Check if office is currently open based on Google Sheet Working Hours
@@ -37,7 +21,7 @@ async function isOfficeOpen() {
 
         // Get current day and time in Israel
         const now = new Date();
-        const israelTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
+        const israelTime = new Date(now.toLocaleString('en-US', { timeZone: config.timezone }));
         
         const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
         const currentDay = days[israelTime.getDay()];
@@ -74,36 +58,28 @@ async function isOfficeOpen() {
 }
 
 /**
- * Get message text (placeholder for now - can be replaced with audio URLs)
+ * Get current office status details
  */
-function getMessage(key) {
-    return MESSAGES[key] || 'שלום';
-}
-
-/**
- * Update a message (for admin use)
- */
-function setMessage(key, text) {
-    if (MESSAGES.hasOwnProperty(key)) {
-        MESSAGES[key] = text;
-        console.log(`📝 Message ${key} updated`);
-        return true;
+async function getOfficeStatus() {
+    try {
+        const settings = await getBookingSettings();
+        const isOpen = await isOfficeOpen();
+        
+        return {
+            isOpen,
+            workingHours: settings.workingHours,
+            timezone: config.timezone
+        };
+    } catch (error) {
+        console.error('Error getting office status:', error.message);
+        return {
+            isOpen: false,
+            error: error.message
+        };
     }
-    return false;
-}
-
-/**
- * Get all messages (for admin view)
- */
-function getAllMessages() {
-    return { ...MESSAGES };
 }
 
 module.exports = {
     isOfficeOpen,
-    getMessage,
-    setMessage,
-    getAllMessages,
-    MESSAGES
+    getOfficeStatus
 };
-
