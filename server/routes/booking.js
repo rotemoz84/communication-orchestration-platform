@@ -1,17 +1,12 @@
 /**
  * Booking API Routes
- * Endpoints for managing booking availability and reservations
+ * Endpoints for managing booking availability
  */
 
 const express = require('express');
 const router = express.Router();
-const { getBookingSettings, clearCache } = require('../services/googleSheets');
-const { getAvailableSlots, createBookingEvent } = require('../services/googleCalendar');
-const { 
-    saveAppointment, 
-    getAppointmentById, 
-    updateAppointmentStatus 
-} = require('../services/appointments');
+const { getBookingSettings, clearCache } = require('../integrations/google/sheets');
+const { getAvailableSlots, createBookingEvent } = require('../integrations/google/calendar');
 
 /**
  * GET /api/booking/settings
@@ -37,9 +32,6 @@ router.get('/settings', async (req, res, next) => {
 /**
  * GET /api/booking/slots
  * Returns available time slots for a specific date and meeting type
- * Query params:
- *   - date: YYYY-MM-DD format
- *   - duration: meeting duration in minutes (optional, defaults to 30)
  */
 router.get('/slots', async (req, res, next) => {
     try {
@@ -49,7 +41,6 @@ router.get('/slots', async (req, res, next) => {
             return res.status(400).json({ error: 'Date parameter is required' });
         }
 
-        // Validate date format
         if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
             return res.status(400).json({ error: 'Date must be in YYYY-MM-DD format' });
         }
@@ -77,9 +68,6 @@ router.get('/slots', async (req, res, next) => {
 /**
  * GET /api/booking/available-dates
  * Returns dates that have available slots for the next N days
- * Query params:
- *   - duration: meeting duration in minutes
- *   - days: number of days to check (default: 30)
  */
 router.get('/available-dates', async (req, res, next) => {
     try {
@@ -124,14 +112,12 @@ router.get('/available-dates', async (req, res, next) => {
 
 /**
  * POST /api/booking/reserve
- * Create a new booking
- * Body: { name, email, phone, meetingTypeId, date, time, message }
+ * Create a new booking (creates calendar event only)
  */
 router.post('/reserve', async (req, res, next) => {
     try {
         const { name, email, phone, meetingTypeId, date, time, message } = req.body;
 
-        // Validate required fields
         if (!name || !email || !date || !time) {
             return res.status(400).json({ 
                 error: 'Missing required fields',
@@ -139,18 +125,15 @@ router.post('/reserve', async (req, res, next) => {
             });
         }
 
-        // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             return res.status(400).json({ error: 'Invalid email format' });
         }
 
-        // Get settings and meeting type
         const settings = await getBookingSettings();
         const meetingType = settings.meetingTypes.find(mt => mt.id === meetingTypeId) 
             || settings.meetingTypes[0];
 
-        // Verify the slot is still available
         const slots = await getAvailableSlots(
             date,
             settings.workingHours,
@@ -186,22 +169,10 @@ router.post('/reserve', async (req, res, next) => {
             meetingType
         });
 
-        // Save to Appointments sheet for tracking
-        const appointment = await saveAppointment({
-            name,
-            email,
-            phone,
-            date,
-            time: requestedSlot.time,
-            meetingType,
-            eventId: event.eventId
-        });
-
         res.status(201).json({
             success: true,
             message: 'Booking confirmed',
             booking: {
-                bookingId: appointment.bookingId,
                 name,
                 email,
                 date,
@@ -218,7 +189,7 @@ router.post('/reserve', async (req, res, next) => {
 
 /**
  * POST /api/booking/refresh-settings
- * Clear the settings cache to force reload from Google Sheets
+ * Clear the settings cache
  */
 router.post('/refresh-settings', async (req, res) => {
     clearCache();
@@ -228,77 +199,4 @@ router.post('/refresh-settings', async (req, res) => {
     });
 });
 
-/**
- * GET /api/booking/appointment/:id
- * Get appointment details by booking ID
- */
-router.get('/appointment/:id', async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const appointment = await getAppointmentById(id);
-        
-        if (!appointment) {
-            return res.status(404).json({ error: 'Appointment not found' });
-        }
-
-        res.json(appointment);
-    } catch (error) {
-        next(error);
-    }
-});
-
-/**
- * POST /api/booking/appointment/:id/confirm
- * Client confirms they are coming
- */
-router.post('/appointment/:id/confirm', async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        
-        const appointment = await getAppointmentById(id);
-        if (!appointment) {
-            return res.status(404).json({ error: 'Appointment not found' });
-        }
-
-        await updateAppointmentStatus(id, 'confirmed');
-
-        res.json({ 
-            success: true, 
-            message: 'Appointment confirmed',
-            bookingId: id
-        });
-    } catch (error) {
-        next(error);
-    }
-});
-
-/**
- * POST /api/booking/appointment/:id/cancel
- * Client requests to cancel (sets status to cancel_requested)
- */
-router.post('/appointment/:id/cancel', async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const { notes } = req.body;
-        
-        const appointment = await getAppointmentById(id);
-        if (!appointment) {
-            return res.status(404).json({ error: 'Appointment not found' });
-        }
-
-        await updateAppointmentStatus(id, 'cancel_requested', notes || '');
-
-        // TODO: Send notification to business owner
-
-        res.json({ 
-            success: true, 
-            message: 'Cancellation request received',
-            bookingId: id
-        });
-    } catch (error) {
-        next(error);
-    }
-});
-
 module.exports = router;
-

@@ -6,8 +6,9 @@
 const express = require('express');
 const router = express.Router();
 const MessagingResponse = require('twilio').twiml.MessagingResponse;
-const { handleIncomingMessage, getBotStartMessage, resetUserState, getAllBotMessages } = require('../services/whatsappBot');
-const { sendWhatsAppMessage } = require('../services/whatsapp');
+const { handleIncomingMessage, getBotStartMessage, resetUserState, getAllBotMessages } = require('../integrations/twilio/whatsappBot');
+const { sendWhatsAppMessage } = require('../integrations/twilio/whatsapp');
+const { saveInquiry } = require('../services/inquiries');
 
 /**
  * Incoming WhatsApp message webhook
@@ -31,8 +32,8 @@ router.post('/incoming', async (req, res) => {
         
         console.log(`📱 WhatsApp incoming from ${phoneNumber}: ${messageContent}`);
 
-        // Handle the message through the bot
-        const response = await handleIncomingMessage(phoneNumber, messageContent, profileName);
+        // Handle the message through the bot (pass saveInquiry function)
+        const response = await handleIncomingMessage(phoneNumber, messageContent, profileName, saveInquiry);
 
         // Build response with buttons if provided
         if (response.buttons && response.buttons.length > 0) {
