@@ -1,0 +1,21 @@
+# Task List
+
+- [x] Technical Setup <!-- id: 25 -->
+    - [x] Initialize Vite project (React + TS) <!-- id: 1 -->
+    - [x] Configure `dist` output for static hosting compatibility <!-- id: 27 -->
+    - [x] Configure RTL and global CSS variables <!-- id: 26 -->
+    - [x] Install dependencies (lucide-react, framer-motion, date-fns) <!-- id: 2 -->
+    - [x] Restore `src` folder structure after move <!-- id: 30 -->
+- [x] Core Components & Redesign (Dr. Yuval Oz) <!-- id: 6 -->
+    - [x] Navigation & Header ("צור קשר" Lead CTA) <!-- id: 7 -->
+    - [x] Hero Section (Professional Image + H1 + Tagline) <!-- id: 8 -->
+    - [x] Specialties Grid with high-quality images <!-- id: 10 -->
+    - [x] Experience Timeline / Cards <!-- id: 9 -->
+    - [x] Responsive layout (PC/Mobile optimization) <!-- id: 19 -->
+- [x] Lead Generation System <!-- id: 13 -->
+    - [x] Remove old booking accordion <!-- id: 31 -->
+    - [x] Fixed Sidebar Contact Form <!-- id: 14 -->
+    - [x] Phone number capture and success state <!-- id: 15 -->
+- [ ] Final Refinement & SEO <!-- id: 18 -->
+    - [x] SEO Meta tags and semantic HTML <!-- id: 20 -->
+    - [ ] Performance audit and finishing touches <!-- id: 22 -->
