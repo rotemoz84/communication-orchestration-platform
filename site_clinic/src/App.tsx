@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // --- Assets ---
 import drOzImg from './assets/dr_oz.png';
+import whatsappLogo from './assets/whatsapp_white.png';
 
 // --- Data ---
 const SERVICES_OPTIONS = [
@@ -43,10 +44,10 @@ const Header = ({ activeSection, isTransparent }: { activeSection: string; isTra
             <a href="#about" className={`nav-link ${activeSection === 'about' ? 'active' : ''} ${isTransparent ? 'text-white' : ''}`}>אודות</a>
           </nav>
 
-          <div className="flex items-center gap-4">
-            <a href="#contact" className="btn-primary !py-2 !px-4 !text-xs !w-auto lg:!text-sm lg:!px-6">פנייה אישית</a>
-            <button className={`mobile-menu-trigger ${isTransparent ? 'text-white' : ''}`} onClick={() => setIsMenuOpen(true)}>
-              <Menu className="w-8 h-8" />
+          <div className="flex items-center gap-2 sm:gap-4 flex-nowrap shrink-0">
+            <a href="#contact" className="btn-primary !py-2 !px-3 sm:!px-4 !text-[10px] sm:!text-xs !w-auto lg:!text-sm lg:!px-6 whitespace-nowrap flex-shrink-0">פנייה אישית</a>
+            <button className={`mobile-menu-trigger !p-1 sm:!p-2 ${isTransparent ? 'text-white' : ''}`} onClick={() => setIsMenuOpen(true)}>
+              <Menu className="w-7 h-7 sm:w-8 sm:h-8" />
             </button>
           </div>
         </div>
@@ -142,58 +143,59 @@ const LeadForm = () => {
   };
 
   return (
-    <div className="card sidebar-sticky">
-      <div className="section-title !border-r-0 !pr-0 !mb-8">
-        <h3 className="text-2xl font-black">פנייה אישית</h3>
-        <p className="text-sm">נחזור אלייך בהקדם המקסימלי</p>
+    <div className="card sidebar-sticky contact-form-white shadow-[0_20px_50px_rgba(26,43,60,0.08)] !rounded-[48px] !p-12 border border-slate-100">
+      <div className="section-title !border-r-0 !pr-0 !mb-12 text-center">
+        <h3 className="text-3xl font-black text-primary-navy">פנייה אישית</h3>
+        <p className="text-slate-500 font-medium mt-2">נחזור אלייך בהקדם המקסימלי</p>
       </div>
 
       {status === 'success' && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
-          className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-center"
+          className="mb-8 p-6 bg-green-50 border border-green-100 rounded-2xl text-center"
         >
-          <CheckCircle2 className="w-8 h-8 text-green-600 mx-auto mb-2" />
-          <h4 className="text-green-800 font-bold">הודעתך נשלחה בהצלחה!</h4>
-          <p className="text-green-700 text-sm">ד"ר עוז או נציגו יחזרו אלייך בהקדם.</p>
+          <CheckCircle2 className="w-10 h-10 text-green-600 mx-auto mb-3" />
+          <h4 className="text-green-800 text-xl font-bold">הודעתך נשלחה בהצלחה!</h4>
+          <p className="text-green-700 mt-2">ד"ר עוז או נציגו יחזרו אלייך בהקדם.</p>
         </motion.div>
       )}
 
       {status === 'error' && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-center">
+        <div className="mb-8 p-6 bg-red-50 border border-red-100 rounded-2xl text-center">
           <h4 className="text-red-800 font-bold">חלה שגיאה בשליחה</h4>
           <p className="text-red-700 text-sm">אנא נסי שנית או צרי קשר טלפוני.</p>
         </div>
       )}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-bold text-slate-600 mb-1">שם מלא (אופציונלי)</label>
+
+      <form onSubmit={handleSubmit} className="space-y-8">
+        <div className="space-y-2">
+          <label className="block text-sm font-bold text-slate-700 mr-2">שם מלא (אופציונלי)</label>
           <input
             type="text"
-            className="input-field"
+            className="input-field !bg-slate-50 !border-slate-200 !text-primary-navy !rounded-2xl !py-4"
             placeholder="מיכל ישראלי"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-4">
-          <div>
-            <label className="block text-sm font-bold text-slate-600 mb-1">טלפון ליצירת קשר</label>
+        <div className="grid grid-cols-1 gap-8">
+          <div className="space-y-2">
+            <label className="block text-sm font-bold text-slate-700 mr-2">טלפון ליצירת קשר</label>
             <input
               type="tel"
-              className="input-field"
+              className="input-field !bg-slate-50 !border-slate-200 !text-primary-navy !rounded-2xl !py-4"
               placeholder="050-1234567"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             />
           </div>
-          <div>
-            <label className="block text-sm font-bold text-slate-600 mb-1">אימייל</label>
+          <div className="space-y-2">
+            <label className="block text-sm font-bold text-slate-700 mr-2">אימייל</label>
             <input
               type="email"
-              className="input-field"
+              className="input-field !bg-slate-50 !border-slate-200 !text-primary-navy !rounded-2xl !py-4"
               placeholder="michal@example.com"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -201,10 +203,10 @@ const LeadForm = () => {
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-bold text-slate-600 mb-1">השירות המבוקש (אופציונלי)</label>
+        <div className="space-y-2">
+          <label className="block text-sm font-bold text-slate-700 mr-2">השירות המבוקש (אופציונלי)</label>
           <select
-            className="input-field"
+            className="input-field !bg-slate-50 !border-slate-200 !text-primary-navy !rounded-2xl !py-4"
             value={formData.service}
             onChange={(e) => setFormData({ ...formData, service: e.target.value })}
           >
@@ -213,23 +215,23 @@ const LeadForm = () => {
           </select>
         </div>
 
-        <div>
-          <label className="block text-sm font-bold text-slate-600 mb-1">שבוע הריון (אופציונלי)</label>
+        <div className="space-y-2">
+          <label className="block text-sm font-bold text-slate-700 mr-2">שבוע הריון (אופציונלי)</label>
           <input
             type="number"
             min="1"
             max="42"
-            className="input-field"
-            placeholder="למשל: 12"
+            className="input-field !bg-slate-50 !border-slate-200 !text-primary-navy !rounded-2xl !py-4"
+            placeholder="בין 1 ל 42"
             value={formData.week}
             onChange={(e) => setFormData({ ...formData, week: e.target.value })}
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-bold text-slate-600 mb-1">הודעה נוספת</label>
+        <div className="space-y-2">
+          <label className="block text-sm font-bold text-slate-700 mr-2">הודעה נוספת</label>
           <textarea
-            className="input-field h-20 resize-none"
+            className="input-field !bg-slate-50 !border-slate-200 !text-primary-navy !rounded-2xl h-28 resize-none !py-4"
             placeholder="פירוט קצר..."
             value={formData.message}
             onChange={(e) => setFormData({ ...formData, message: e.target.value })}
@@ -239,10 +241,10 @@ const LeadForm = () => {
         <button
           type="submit"
           disabled={status === 'loading'}
-          className="btn-primary shadow-lg shadow-[#76A5AF]/20 mt-4 disabled:opacity-50"
+          className="btn-primary !bg-primary-navy !text-white shadow-xl shadow-black/10 mt-6 disabled:opacity-50 !py-5 !rounded-2xl transition-all hover:scale-[1.02] active:scale-95 font-black text-lg"
         >
-          {status === 'loading' ? 'שולח...' : 'שלחי פנייה'}
-          <ArrowLeft className="w-5 h-5" />
+          {status === 'loading' ? 'שולח...' : 'שילחי ונחזור אליך בהקדם'}
+          <ArrowLeft className="w-6 h-6 mr-2" />
         </button>
       </form>
     </div>
@@ -306,7 +308,7 @@ const App = () => {
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-20 md:pb-0">
       <Header activeSection={activeSection} isTransparent={isTransparent} />
 
       {/* Hero Section */}
@@ -384,6 +386,7 @@ const App = () => {
             <section id="experience">
               <div className="section-title">
                 <h2>ניסיון מקצועי</h2>
+                <p>שלושה עשורים של נסיון מקצועי</p>
               </div>
 
               <div className="grid gap-4">
@@ -432,9 +435,9 @@ const App = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-8 md:col-span-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 md:col-span-2">
               <div className="flex flex-col gap-6">
-                <div className="footer-nav-links">
+                <div className="footer-nav-links flex flex-col gap-4">
                   <div className="flex items-center gap-3 text-slate-500 font-medium">
                     <MapPin className="w-4 h-4 text-secondary-teal" />
                     <span className="text-sm">ראש פינה</span>
@@ -448,28 +451,28 @@ const App = () => {
                     <span className="text-sm font-bold text-primary-navy">04-6805332</span>
                   </div>
                   <a
-                    href="https://wa.me/972506993353?text=%D7%A9%D7%9C%D7%95%D7%9D%20%D7%93%22%D7%A8%20%D7%A2%D7%95%D7%96%2C%20%D7%90%D7%A9%D7%9E%D7%97%20%D7%9C%D7%A7%D7%91%D7%9C%20%D7%A4%D7%A8%D7%98%D7%99%D7%9D%20%D7%A0%D7%95%D7%A1%D7%A4%D7%99%D7%9D"
+                    href="https://wa.me/972506993353?text=%D7%A9%D7%9C%D7%95%D7%9D%2C%20%D7%90%D7%A0%D7%99%20%D7%9E%D7%A2%D7%95%D7%A0%D7%99%D7%99%D7%A0%D7%AA%20%D7%9C%D7%A7%D7%91%D7%9C%20%D7%A2%D7%95%D7%93%20%D7%A4%D7%A8%D7%98%D7%99%D7%9D%20%D7%A2%D7%9C%20%D7%94%D7%A9%D7%99%D7%A8%D7%95%D7%AA%D7%99%D7%9D%20%D7%A9%D7%9C%20%D7%94%D7%9E%D7%A8%D7%A4%D7%90%D7%94"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="whatsapp-btn-footer"
+                    className="footer-whatsapp-link"
                   >
-                    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.316 1.592 5.448 0 9.886-4.438 9.888-9.886.002-5.448-4.437-9.884-9.885-9.884-5.447 0-9.884 4.437-9.887 9.885 0 2.13.56 3.668 1.54 5.447l-1.011 3.689 3.839-.982-.2 1.329zm9.367-7.11c-.263-.131-1.555-.768-1.796-.856-.24-.087-.414-.131-.588.131-.174.262-.676.856-.83.1.031-.153.174-.436.044-.262-.131-.131-.502-.857-.687-.24-.131-.414-.131-.588 0l-.131.131c-.131.131-.328.312-.328.761 0 .449.328.883.372.943.044.06 6.449 10.142 6.449 10.142.349.524.785.655 1.178.655s.785-.131 1.047-.393c.262-.262.262-.655.262-.655s.087-.131 0-.197c-.044-.066-.35-.175-.611-.263z" />
-                    </svg>
-                    שלחי הודעת וואטסאפ
+                    <img src={whatsappLogo} alt="WhatsApp" className="footer-whatsapp-icon" />
+                    <span className="text-sm">שילחי לי וואטסאפ</span>
                   </a>
                 </div>
-
-
               </div>
+
+
             </div>
           </div>
+        </div>
 
-          <div className="footer-bottom">
+        <div className="footer-bottom">
+          <div className="page-wrapper flex flex-col items-center justify-center gap-4 text-center">
             <p className="footer-copy">
               © {new Date().getFullYear()} ד"ר יובל עוז | כל הזכויות שמורות.
             </p>
-            <div className="flex items-center gap-8 mt-4 md:mt-0">
+            <div className="flex items-center justify-center gap-8">
               <a href="#" className="footer-copy hover:text-secondary-teal transition-colors">מדיניות פרטיות</a>
               <span className="text-slate-300 select-none"> | </span>
               <a href="#" className="footer-copy hover:text-secondary-teal transition-colors">הנגשת אתר</a>

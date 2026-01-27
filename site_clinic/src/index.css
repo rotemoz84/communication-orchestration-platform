@@ -388,7 +388,6 @@ section {
   }
 }
 
-/* Form Styles */
 .input-field {
   width: 100%;
   padding: 12px 16px;
@@ -398,6 +397,11 @@ section {
   font-size: 15px;
   transition: all 0.2s;
   background: #F7FAFC;
+}
+
+.input-field::placeholder {
+  font-style: italic;
+  opacity: 0.6;
 }
 
 .input-field:focus {
@@ -509,28 +513,67 @@ section {
 }
 
 /* WhatsApp Styling */
-.whatsapp-btn-footer {
+/* Inline WhatsApp Link Styling as full button */
+.footer-whatsapp-link {
   display: flex !important;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  background-color: #25D366;
-  color: white;
-  padding: 16px 32px;
-  border-radius: 40px;
+  background-color: #25D366 !important;
+  color: white !important;
+  padding: 12px 24px;
+  border-radius: 50px;
+  font-weight: 700;
   text-decoration: none;
-  font-weight: 800;
-  font-size: 16px;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
+  width: fit-content;
   box-shadow: 0 4px 15px rgba(37, 211, 102, 0.2);
-  width: 100%;
-  max-width: 320px;
 }
 
-.whatsapp-btn-footer:hover {
-  background-color: #20BA56;
+.footer-whatsapp-link:hover {
+  background-color: #20BA56 !important;
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(37, 211, 102, 0.3);
+  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.3);
+}
+
+.footer-whatsapp-icon {
+  width: 22px !important;
+  height: 22px !important;
+  object-fit: contain;
+  display: block;
+}
+
+/* Contact Form Overrides - Clean White Version */
+.contact-form-white {
+  background-color: var(--white) !important;
+  color: var(--text) !important;
+  border: 1px solid rgba(118, 165, 175, 0.1) !important;
+}
+
+.contact-form-white h3 {
+  color: var(--p-navy) !important;
+}
+
+.contact-form-white .input-field {
+  background-color: #F8FAFC !important;
+  border: 1.5px solid #E2E8F0 !important;
+  color: var(--p-navy) !important;
+}
+
+.contact-form-white .input-field:focus {
+  border-color: var(--s-teal) !important;
+  background-color: var(--white) !important;
+}
+
+.contact-form-white .btn-primary {
+  background-color: var(--p-navy) !important;
+  color: white !important;
+  box-shadow: 0 10px 25px rgba(26, 43, 60, 0.15) !important;
+}
+
+.contact-form-white label {
+  color: var(--text-light) !important;
+  font-weight: 700 !important;
 }
 
 @media (max-width: 768px) {
