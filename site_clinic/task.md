@@ -15,7 +15,11 @@
 - [x] Lead Generation System <!-- id: 13 -->
     - [x] Remove old booking accordion <!-- id: 31 -->
     - [x] Fixed Sidebar Contact Form <!-- id: 14 -->
-    - [x] Phone number capture and success state <!-- id: 15 -->
+    - [x] Phone or Email validation logic <!-- id: 15 -->
+    - [x] PHP Backend (CSV Database + Email) <!-- id: 35 -->
 - [ ] Final Refinement & SEO <!-- id: 18 -->
     - [x] SEO Meta tags and semantic HTML <!-- id: 20 -->
     - [ ] Performance audit and finishing touches <!-- id: 22 -->
+- [ ] Deployment Testing <!-- id: 32 -->
+    - [x] Run production build and verify output <!-- id: 33 -->
+    - [ ] Provide FTP deployment instructions <!-- id: 34 -->
