@@ -334,12 +334,41 @@ section {
   box-shadow: -10px 0 40px rgba(0, 0, 0, 0.15);
 }
 
+.mobile-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #EDF2F7;
+}
+
+.mobile-close-btn {
+  background: #F7FAFC;
+  border-radius: 50%;
+  padding: 12px;
+  color: var(--p-navy);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-close-btn:hover {
+  background: #EDF2F7;
+  transform: rotate(90deg);
+  color: var(--s-teal);
+}
+
 .mobile-nav-stack {
   display: flex;
   flex-direction: column;
   gap: 32px;
-  margin-top: 48px;
-  align-items: flex-start;
+  margin-top: 24px;
+  align-items: center;
+  width: 100%;
 }
 
 .mobile-nav-link {
@@ -381,12 +410,6 @@ section {
   align-self: start;
 }
 
-@media (max-width: 1023px) {
-  .sidebar-sticky {
-    position: static;
-    order: -1;
-  }
-}
 
 .input-field {
   width: 100%;
@@ -574,6 +597,31 @@ section {
 .contact-form-white label {
   color: var(--text-light) !important;
   font-weight: 700 !important;
+}
+
+.contact-form-white .form-row {
+  padding-top: 20px;
+}
+
+/* Article Card Link - Custom Fix */
+.article-card-link {
+  text-decoration: none !important;
+  color: inherit !important;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  height: 100%;
+}
+
+.article-card-link:hover {
+  text-decoration: none !important;
+  color: inherit !important;
+}
+
+/* Utilities */
+.text-transparent {
+  color: transparent !important;
 }
 
 @media (max-width: 768px) {

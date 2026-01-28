@@ -17,9 +17,13 @@
     - [x] Fixed Sidebar Contact Form <!-- id: 14 -->
     - [x] Phone or Email validation logic <!-- id: 15 -->
     - [x] PHP Backend (CSV Database + Email) <!-- id: 35 -->
-- [ ] Final Refinement & SEO <!-- id: 18 -->
+- [x] Routing & Navigation (Refactor) <!-- id: 40 -->
+    - [x] Install React Router & Configure Layout <!-- id: 41 -->
+    - [x] Create standalone HomePage & ArticlePage components <!-- id: 42 -->
+    - [x] Setup .htaccess for clean URLs on FTP <!-- id: 43 -->
+- [x] Final Refinement & SEO <!-- id: 18 -->
     - [x] SEO Meta tags and semantic HTML <!-- id: 20 -->
-    - [ ] Performance audit and finishing touches <!-- id: 22 -->
-- [ ] Deployment Testing <!-- id: 32 -->
+    - [x] Performance audit and finishing touches <!-- id: 22 -->
+- [x] Deployment Testing <!-- id: 32 -->
     - [x] Run production build and verify output <!-- id: 33 -->
-    - [ ] Provide FTP deployment instructions <!-- id: 34 -->
+    - [x] Provide FTP deployment instructions <!-- id: 34 -->

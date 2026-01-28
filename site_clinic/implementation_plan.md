@@ -49,3 +49,18 @@ The primary objective of the site is to capture potential client interest, speci
 - [x] Responsive Media Queries (Mobile vs PC).
 - [x] Build settled (npm run build).
 - [x] Generated image integration.
+
+## Routing Implementation (Refactor)
+### Architecture
+- **Router**: React Router DOM (Browser History).
+- **Structure**:
+    - `Layout.tsx`: Shared Header and Footer.
+    - `HomePage.tsx`: Hero, Specialties, Experience, Lead Form.
+    - `ArticlePage.tsx`: Dynamic route `/articles/:id`.
+- **Navigation**:
+    - Update `Articles.tsx` to use `<Link to="...">` instead of onClick state.
+    - Add `ScrollToTop` utility for proper navigation behavior.
+
+### Hosting Compatibility (FTP)
+- Since this is a Client-Side Router on static hosting, navigating to a sub-page and refreshing will cause a 404 error without server config.
+- **Solution**: Add `.htaccess` to `public/` folder to rewrite all requests to `index.html`.
