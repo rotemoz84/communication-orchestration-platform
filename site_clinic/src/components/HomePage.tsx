@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 
 // --- Components ---
 import ContactForm from './ContactForm';
-import Articles from './Articles';
+// import Articles from './Articles';
 import Header from './Header';
 import Footer from './Footer';
 
