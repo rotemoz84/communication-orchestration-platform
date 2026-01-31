@@ -36,7 +36,7 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
 
         try {
             // API endpoint
-            const API_URL = 'https://glmfthxp.a2hosted.com/nodeapp';
+            const API_URL = 'https://api.drozyuval.com';
             
             const response = await fetch(`${API_URL}/api/inquiries`, {
                 method: 'POST',

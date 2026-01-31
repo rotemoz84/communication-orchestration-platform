@@ -34,10 +34,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // For Twilio webhooks
 
 // ============================================
+// Route Prefix (for cPanel deployments)
+// ============================================
+const BASE_PATH = process.env.BASE_PATH || '';
+
+// ============================================
 // Health & Status Endpoints
 // ============================================
 
-app.get('/api/health', (req, res) => {
+app.get(BASE_PATH + '/api/health', (req, res) => {
     res.json({ 
         status: 'ok', 
         timestamp: new Date().toISOString(),
@@ -50,26 +55,26 @@ app.get('/api/health', (req, res) => {
 // ============================================
 
 // Booking routes
-app.use('/api/booking', bookingRoutes);
+app.use(BASE_PATH + '/api/booking', bookingRoutes);
 
 // Voice/IVR routes (Twilio webhooks)
-app.use('/api/voice', ivrRoutes);
+app.use(BASE_PATH + '/api/voice', ivrRoutes);
 
 // WhatsApp bot routes (Twilio webhooks)
-app.use('/api/whatsapp', whatsappRoutes);
+app.use(BASE_PATH + '/api/whatsapp', whatsappRoutes);
 
 // Call records API
-app.use('/api/calls', callRoutes);
+app.use(BASE_PATH + '/api/calls', callRoutes);
 
 // Inquiries API (website contact form)
-app.use('/api/inquiries', inquiryRoutes);
+app.use(BASE_PATH + '/api/inquiries', inquiryRoutes);
 
 // ============================================
 // Admin/Management Endpoints
 // ============================================
 
 // Manual calendar sync trigger
-app.post('/api/sync/calendar', async (req, res) => {
+app.post(BASE_PATH + '/api/sync/calendar', async (req, res) => {
     try {
         console.log('🔄 Manual calendar sync requested');
         const result = await syncCalendarToSheet();
