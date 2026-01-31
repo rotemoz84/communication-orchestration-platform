@@ -38,7 +38,9 @@ async function create(inquiryData) {
             RETURNING *
         `;
 
-        const pregnancyWeek = week ? parseInt(week) : null;
+        // Handle pregnancy week - only convert if it's a valid number
+        const parsedWeek = week ? parseInt(week) : null;
+        const pregnancyWeek = (parsedWeek && !isNaN(parsedWeek)) ? parsedWeek : null;
         const result = await query(sql, [inquiryId, name, phone, email, service, pregnancyWeek, message, source]);
 
         console.log(`📝 Inquiry saved: ${inquiryId} from ${phone || email}`);

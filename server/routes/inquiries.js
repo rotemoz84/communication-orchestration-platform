@@ -6,6 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const inquiryRepository = require('../dal/repositories/inquiryRepository');
+const { sendInquiryNotification } = require('../integrations/email');
 
 /**
  * POST /api/inquiries
@@ -33,6 +34,17 @@ router.post('/', async (req, res) => {
         });
 
         console.log(`✅ New website inquiry: ${inquiry.inquiryId}`);
+
+        // Send email notification (don't wait for it, don't block the response)
+        sendInquiryNotification({
+            inquiryId: inquiry.inquiryId,
+            name,
+            phone,
+            email,
+            service,
+            week,
+            message
+        }).catch(err => console.error('Email notification error:', err));
 
         res.status(201).json({ 
             success: true, 
