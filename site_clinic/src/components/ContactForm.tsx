@@ -56,7 +56,7 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
 
     return (
         <section id={id} className="scroll-mt-32">
-            <div className="card sidebar-sticky contact-form-white shadow-[0_20px_50px_rgba(26,43,60,0.08)] !p-8 md:!p-12 ">
+            <div className="card sidebar-sticky contact-form-white shadow-[0_20px_50px_rgba(26,43,60,0.08)] !p-8 md:!p-12 rounded-3xl">
                 {showTitle && (
                     <div className="section-title !border-r-0 !pr-0 !mb-12 text-center">
                         <h3 className="text-3xl font-black text-primary-navy">פנייה אישית</h3>

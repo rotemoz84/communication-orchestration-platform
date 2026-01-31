@@ -21,11 +21,11 @@ const Footer = () => {
                             <div className="footer-nav-links flex flex-col gap-4">
                                 <div className="flex items-center gap-3 text-slate-500 font-medium">
                                     <MapPin className="w-4 h-4 text-secondary-teal" />
-                                    <span className="text-sm">ראש פינה</span>
+                                    <span className="text-sm">ראש פינה, קניון סנטר הגליל, בניין א, קומה 2</span>
                                 </div>
                                 <div className="flex items-center gap-3 text-slate-500 font-medium">
                                     <Clock className="w-4 h-4 text-secondary-teal" />
-                                    <span className="text-sm">מענה טלפוני 24/7</span>
+                                    <span className="text-sm">ראשון עד חמישי, 9:00 - 21:00</span>
                                 </div>
                                 <div className="flex items-center gap-3 text-slate-500 font-medium">
                                     <Phone className="w-4 h-4 text-secondary-teal" />
