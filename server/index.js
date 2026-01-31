@@ -17,6 +17,7 @@ const { initDatabase } = require('./dal');
 const bookingRoutes = require('./routes/booking');
 const whatsappRoutes = require('./routes/whatsapp');
 const callRoutes = require('./routes/calls');
+const inquiryRoutes = require('./routes/inquiries');
 const ivrRoutes = require('./ivr/routes');
 
 // Google Integrations (Calendar Sync)
@@ -59,6 +60,9 @@ app.use('/api/whatsapp', whatsappRoutes);
 
 // Call records API
 app.use('/api/calls', callRoutes);
+
+// Inquiries API (website contact form)
+app.use('/api/inquiries', inquiryRoutes);
 
 // ============================================
 // Admin/Management Endpoints

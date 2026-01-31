@@ -114,6 +114,42 @@ async function createTables() {
                 EXECUTE FUNCTION update_updated_at_column();
         `);
 
+        // Inquiries table for website contact form submissions
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS inquiries (
+                id SERIAL PRIMARY KEY,
+                inquiry_id VARCHAR(20) UNIQUE NOT NULL,
+                timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                name VARCHAR(100),
+                phone VARCHAR(20),
+                email VARCHAR(100),
+                service VARCHAR(100),
+                pregnancy_week INTEGER,
+                message TEXT,
+                source VARCHAR(50) DEFAULT 'website',
+                status VARCHAR(20) DEFAULT 'new',
+                notes TEXT,
+                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Create indexes for inquiries
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_inquiries_timestamp ON inquiries(timestamp);
+            CREATE INDEX IF NOT EXISTS idx_inquiries_phone ON inquiries(phone);
+            CREATE INDEX IF NOT EXISTS idx_inquiries_status ON inquiries(status);
+        `);
+
+        // Create trigger for inquiries updated_at
+        await pool.query(`
+            DROP TRIGGER IF EXISTS update_inquiries_updated_at ON inquiries;
+            CREATE TRIGGER update_inquiries_updated_at
+                BEFORE UPDATE ON inquiries
+                FOR EACH ROW
+                EXECUTE FUNCTION update_updated_at_column();
+        `);
+
         console.log('✅ Database tables ready');
     } catch (error) {
         console.error('Error creating tables:', error.message);
