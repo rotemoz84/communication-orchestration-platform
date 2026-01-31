@@ -40,14 +40,16 @@ async function getWorkingHours(sheets) {
             const [day, start, end, active] = row;
             if (day) {
                 const dayLower = day.toLowerCase().trim();
-                const status = active?.toUpperCase().trim() || 'DEFAULT';
+                const status = (active && active.toUpperCase().trim()) || 'DEFAULT';
+                const startTrimmed = start ? start.trim() : null;
+                const endTrimmed = end ? end.trim() : null;
                 
                 // Active column can be: OPEN, CLOSED, or DEFAULT
                 workingHours[dayLower] = {
-                    start: start?.trim() || null,
-                    end: end?.trim() || null,
-                    startMinutes: timeToMinutes(start?.trim()),
-                    endMinutes: timeToMinutes(end?.trim()),
+                    start: startTrimmed,
+                    end: endTrimmed,
+                    startMinutes: timeToMinutes(startTrimmed),
+                    endMinutes: timeToMinutes(endTrimmed),
                     status: (status === 'OPEN' || status === 'CLOSED') ? status : 'DEFAULT'
                 };
             }
@@ -77,14 +79,15 @@ async function getMeetingTypes(sheets) {
         rows.forEach((row, index) => {
             const [name, duration, description, active] = row;
             if (name) {
-                const isActive = active?.toUpperCase() === 'TRUE' || active === '1' || active?.toUpperCase() === 'YES' || active === undefined;
+                const activeUpper = active ? active.toUpperCase() : '';
+                const isActive = activeUpper === 'TRUE' || active === '1' || activeUpper === 'YES' || active === undefined;
                 
                 if (isActive) {
                     meetingTypes.push({
                         id: `meeting-${index}`,
                         name: name.trim(),
                         duration: parseInt(duration) || 30,
-                        description: description?.trim() || ''
+                        description: (description && description.trim()) || ''
                     });
                 }
             }

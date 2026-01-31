@@ -22,6 +22,13 @@ async function getAuthClient() {
         const keyPath = config.google.serviceAccountKeyPath;
         const absolutePath = path.resolve(__dirname, '../..', keyPath);
         
+        // Check if file exists
+        const fs = require('fs');
+        if (!fs.existsSync(absolutePath)) {
+            console.log('⚠️ Google service account key not found, Google features disabled');
+            return null;
+        }
+        
         const auth = new google.auth.GoogleAuth({
             keyFile: absolutePath,
             scopes: [
@@ -35,8 +42,8 @@ async function getAuthClient() {
         console.log('✅ Google Auth initialized successfully');
         return authClient;
     } catch (error) {
-        console.error('❌ Failed to initialize Google Auth:', error.message);
-        throw new Error('Google authentication failed. Check your service account key.');
+        console.error('⚠️ Google Auth failed:', error.message);
+        return null;
     }
 }
 
@@ -45,6 +52,7 @@ async function getAuthClient() {
  */
 async function getSheetsClient() {
     const auth = await getAuthClient();
+    if (!auth) return null;
     return google.sheets({ version: 'v4', auth });
 }
 
@@ -53,6 +61,7 @@ async function getSheetsClient() {
  */
 async function getCalendarClient() {
     const auth = await getAuthClient();
+    if (!auth) return null;
     return google.calendar({ version: 'v3', auth });
 }
 

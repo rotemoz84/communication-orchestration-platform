@@ -35,8 +35,8 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
         setStatus('loading');
 
         try {
-            // API endpoint - update this URL to your server address
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3003';
+            // API endpoint
+            const API_URL = 'https://glmfthxp.a2hosted.com/nodeapp';
             
             const response = await fetch(`${API_URL}/api/inquiries`, {
                 method: 'POST',

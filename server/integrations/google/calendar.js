@@ -26,7 +26,8 @@ async function getBusyTimes(startDate, endDate) {
             }
         });
 
-        const busyTimes = response.data.calendars[CALENDAR_ID]?.busy || [];
+        const calendarData = response.data.calendars[CALENDAR_ID];
+        const busyTimes = (calendarData && calendarData.busy) || [];
         
         return busyTimes.map(period => ({
             start: new Date(period.start),
@@ -138,14 +139,16 @@ async function createBookingEvent(bookingData) {
         // Parse the start time
         const startDateTime = new Date(`${date}T${time}:00`);
         const endDateTime = new Date(startDateTime);
-        endDateTime.setMinutes(endDateTime.getMinutes() + (meetingType?.duration || 30));
+        const duration = (meetingType && meetingType.duration) || 30;
+        endDateTime.setMinutes(endDateTime.getMinutes() + duration);
 
+        const meetingTypeName = (meetingType && meetingType.name) || 'Consultation';
         const event = {
             summary: `Meeting with ${name}`,
             description: `
 📋 BOOKING DETAILS
 ━━━━━━━━━━━━━━━━━━
-Service: ${service || meetingType?.name || 'Consultation'}
+Service: ${service || meetingTypeName}
 Client: ${name}
 Email: ${email}
 Phone: ${phone || 'Not provided'}

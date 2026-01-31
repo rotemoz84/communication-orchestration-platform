@@ -107,9 +107,16 @@ async function startServer() {
         validateConfig();
 
         // Initialize database connection
-        console.log('📦 Connecting to database...');
-        await initDatabase();
-        console.log('✅ Database connected');
+        let dbConnected = false;
+        try {
+            console.log('📦 Connecting to database...');
+            await initDatabase();
+            console.log('✅ Database connected');
+            dbConnected = true;
+        } catch (dbError) {
+            console.error('⚠️ Database connection failed:', dbError.message);
+            console.log('⚠️ Server will continue without database');
+        }
 
         app.listen(config.port, () => {
             console.log('');
@@ -118,18 +125,22 @@ async function startServer() {
             console.log('═══════════════════════════════════════════════');
             console.log(`📅 Calendar ID: ${config.google.calendarId || 'Not configured'}`);
             console.log(`📊 Sheet ID: ${config.google.sheetId || 'Not configured'}`);
-            console.log(`🗄️ Database: ${config.db.database}`);
+            console.log(`🗄️ Database: ${dbConnected ? config.db.database : 'Not connected'}`);
             console.log(`🕐 Timezone: ${config.timezone}`);
             console.log('═══════════════════════════════════════════════');
             
-            // Start calendar sync scheduler (every 30 minutes)
-            schedulePeriodicSync(30);
-            
-            // Run initial sync on startup
-            console.log('🔄 Running initial calendar sync...');
-            syncCalendarToSheet().catch(err => {
-                console.error('Initial sync failed:', err.message);
-            });
+            // Start calendar sync scheduler (every 30 minutes) - only if Google is configured
+            try {
+                schedulePeriodicSync(30);
+                
+                // Run initial sync on startup
+                console.log('🔄 Running initial calendar sync...');
+                syncCalendarToSheet().catch(err => {
+                    console.error('Initial sync failed:', err.message);
+                });
+            } catch (syncError) {
+                console.log('⚠️ Calendar sync disabled (Google not configured)');
+            }
         });
     } catch (error) {
         console.error('❌ Failed to start server:', error.message);

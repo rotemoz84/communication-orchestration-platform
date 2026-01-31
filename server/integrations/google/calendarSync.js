@@ -36,6 +36,11 @@ function getTomorrowEnd() {
 async function fetchCalendarEvents() {
     const calendar = await getCalendarClient();
     
+    if (!calendar) {
+        console.log('⚠️ Google Calendar not configured, skipping fetch');
+        return [];
+    }
+    
     const todayStart = getTodayStart();
     const tomorrowEnd = getTomorrowEnd();
 
@@ -56,8 +61,8 @@ async function fetchCalendarEvents() {
             eventId: event.id,
             summary: event.summary || '',
             description: event.description || '',
-            start: event.start?.dateTime || event.start?.date,
-            end: event.end?.dateTime || event.end?.date,
+            start: (event.start && event.start.dateTime) || (event.start && event.start.date),
+            end: (event.end && event.end.dateTime) || (event.end && event.end.date),
             status: event.status
         }));
     } catch (error) {
@@ -100,6 +105,11 @@ function parseEventDescription(description) {
 async function getSheetAppointments() {
     const sheets = await getSheetsClient();
     
+    if (!sheets) {
+        console.log('⚠️ Google Sheets not configured');
+        return [];
+    }
+    
     try {
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: SHEET_ID,
@@ -141,13 +151,15 @@ function generateBookingIdFromEvent(eventId) {
 async function clearAppointmentsSheet() {
     const sheets = await getSheetsClient();
     
+    if (!sheets) return;
+    
     try {
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: SHEET_ID,
             range: `${APPOINTMENTS_SHEET}!A:K`
         });
         
-        const rowCount = response.data.values?.length || 1;
+        const rowCount = (response.data.values && response.data.values.length) || 1;
         
         if (rowCount > 1) {
             await sheets.spreadsheets.values.clear({
@@ -168,6 +180,8 @@ async function writeAppointmentsToSheet(appointments) {
     if (appointments.length === 0) return;
     
     const sheets = await getSheetsClient();
+    
+    if (!sheets) return;
     
     const rows = appointments.map(apt => [
         apt.bookingId,
@@ -197,6 +211,12 @@ async function writeAppointmentsToSheet(appointments) {
  */
 async function syncCalendarToSheet() {
     console.log('🔄 Starting calendar sync (today + tomorrow only)...');
+    
+    const calendar = await getCalendarClient();
+    if (!calendar) {
+        console.log('⚠️ Google not configured, skipping calendar sync');
+        return { synced: 0, message: 'Google not configured' };
+    }
     
     try {
         const calendarEvents = await fetchCalendarEvents();
@@ -237,18 +257,18 @@ async function syncCalendarToSheet() {
             const existing = existingMap.get(key);
 
             appointments.push({
-                bookingId: existing?.bookingId || bookingId,
+                bookingId: (existing && existing.bookingId) || bookingId,
                 date,
                 time,
                 sortKey: startDate.getTime(),
                 clientName: details.clientName || event.summary || 'Unknown',
-                phone: details.phone || existing?.phone || '',
-                email: details.email || existing?.email || '',
-                service: details.service || existing?.service || 'Meeting',
-                status: existing?.status || 'new',
-                reminderSent: existing?.reminderSent || '',
-                responseTime: existing?.responseTime || '',
-                notes: existing?.notes || ''
+                phone: details.phone || (existing && existing.phone) || '',
+                email: details.email || (existing && existing.email) || '',
+                service: details.service || (existing && existing.service) || 'Meeting',
+                status: (existing && existing.status) || 'new',
+                reminderSent: (existing && existing.reminderSent) || '',
+                responseTime: (existing && existing.responseTime) || '',
+                notes: (existing && existing.notes) || ''
             });
         }
 
