@@ -8,7 +8,7 @@ const router = express.Router();
 const MessagingResponse = require('twilio').twiml.MessagingResponse;
 const { handleIncomingMessage, getBotStartMessage, resetUserState, getAllBotMessages } = require('../integrations/twilio/whatsappBot');
 const { sendWhatsAppMessage } = require('../integrations/twilio/whatsapp');
-const { saveInquiry } = require('../services/inquiries');
+const { saveInquiry } = require('../dal/repositories/inquiryRepository');
 
 /**
  * Incoming WhatsApp message webhook
