@@ -1,5 +1,6 @@
 import { MapPin, Clock, Phone } from 'lucide-react';
 import whatsappLogo from '../assets/whatsapp_white.png';
+import Button from './Button';
 
 const Footer = () => {
     return (
@@ -25,21 +26,24 @@ const Footer = () => {
                                 </div>
                                 <div className="flex items-center gap-3 text-slate-500 font-medium">
                                     <Clock className="w-4 h-4 text-secondary-teal" />
-                                    <span className="text-sm">ראשון עד חמישי, 9:00 - 21:00</span>
+                                    <span className="text-sm">שני עד רביעי , 9:00 - 21:00 (בתיאום מראש)</span>
                                 </div>
-                                <div className="flex items-center gap-3 text-slate-500 font-medium">
-                                    <Phone className="w-4 h-4 text-secondary-teal" />
-                                    <span className="text-sm font-bold text-primary-navy">04-6801552</span>
-                                </div>
-                                <a
-                                    href="https://wa.me/+972506993353?text=%D7%A9%D7%9C%D7%95%D7%9D%2C%20%D7%90%D7%A0%D7%99%20%D7%9E%D7%A2%D7%95%D7%A0%D7%99%D7%99%D7%A0%D7%AA%20%D7%9C%D7%A7%D7%91%D7%9C%20%D7%A2%D7%95%D7%93%20%D7%A4%D7%A8%D7%98%D7%99%D7%9D%20%D7%A2%D7%9C%20%D7%94%D7%A9%D7%99%D7%A8%D7%95%D7%AA%D7%99%D7%9D%20%D7%A9%D7%9C%20%D7%94%D7%9E%D7%A8%D7%A4%D7%90%D7%94"
+                                {/* Call Now Button Component */}
+                                <Button
+                                    buttonColor="#1A2B3C"
+                                    buttonText="התקשרי עכשיו ל 680-1552"
+                                    buttonIcon={<Phone className="w-4 h-4" />}
+                                    href="tel:04-6801552"
+                                />
+                                
+                                {/* whatsapp button Component */}
+                                <Button
+                                    buttonColor="#25D366"
+                                    buttonText="שילחי לי וואטסאפ"
+                                    buttonIcon={<img src={whatsappLogo} alt="WhatsApp" className="generic-button-icon" />}
+                                    href="https://wa.me/+972509996171?text=%D7%A9%D7%9C%D7%95%D7%9D%2C%20%D7%90%D7%A0%D7%99%20%D7%9E%D7%A2%D7%95%D7%A0%D7%99%D7%99%D7%A0%D7%AA%20%D7%9C%D7%A7%D7%91%D7%9C%20%D7%A2%D7%95%D7%93%20%D7%A4%D7%A8%D7%98%D7%99%D7%9D%20%D7%A2%D7%9C%20%D7%94%D7%A9%D7%99%D7%A8%D7%95%D7%AA%D7%99%D7%9D%20%D7%A9%D7%9C%20%D7%94%D7%9E%D7%A8%D7%A4%D7%90%D7%94"
                                     target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="footer-whatsapp-link"
-                                >
-                                    <img src={whatsappLogo} alt="WhatsApp" className="footer-whatsapp-icon" />
-                                    <span className="text-sm">שילחי לי וואטסאפ</span>
-                                </a>
+                                />
                             </div>
                         </div>
                     </div>
