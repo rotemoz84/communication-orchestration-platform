@@ -473,18 +473,18 @@ section {
 .footer-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 48px;
-  margin-bottom: 60px;
+  gap: 24px;
+  margin-bottom: 10px;
 }
 
 @media (min-width: 768px) {
   .footer-grid {
-    grid-template-columns: 1fr 1.5fr;
+    grid-template-columns: 1fr 1fr 1fr;
   }
 }
 
 .footer-bottom {
-  padding-top: 40px;
+  padding-top: 20px;
   border-top: 1px solid #EDF2F7;
   display: flex;
   flex-direction: column;
