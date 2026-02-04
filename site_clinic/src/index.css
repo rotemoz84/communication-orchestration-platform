@@ -413,7 +413,7 @@ section {
 @media (min-width: 768px) {
   .sidebar-sticky {
     border-right: 1px solid rgba(118, 165, 175, 0.2);
-    padding-right: 40px;
+    padding-right: 10px;
   }
 }
 
@@ -605,7 +605,7 @@ section {
   color: var(--text) !important;
   border: 1px solid rgba(118, 165, 175, 0.1) !important;
   border-radius: 24px 0 0 24px !important;
-  padding: 20px !important;
+  padding: 10px !important;
 }
 
 .contact-form-white h3 {
@@ -623,6 +623,19 @@ section {
   background-color: var(--white) !important;
 }
 
+.contact-form-white .input-field.validation-highlight {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.6) !important;
+}
+
+.validation-text {
+  color: #b91c1c;
+}
+
+.error-heading {
+  color: #f59e0b;
+}
+
 .contact-form-white .btn-primary {
   background-color: var(--a-gold) !important;
   color: white !important;
@@ -635,7 +648,7 @@ section {
 }
 
 .contact-form-white .form-row {
-  padding-top: 20px;
+  padding-top: 10px;
 }
 
 /* Article Card Link - Custom Fix */

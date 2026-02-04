@@ -190,10 +190,10 @@ const HomePage = () => {
 
                     </div>
 
-                    {/* Sidebar Area 
+                    {/* Sidebar Area */} 
                     <aside className="mt-20 md:mt-0 sidebar-sticky">
                         <ContactForm />
-                    </aside>  */}
+                    </aside>  
                 </div>
             </main>
 

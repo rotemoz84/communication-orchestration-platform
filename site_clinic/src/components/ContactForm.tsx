@@ -6,14 +6,15 @@ import whatsappLogo from '../assets/whatsapp_white.png';
 import { Phone } from 'lucide-react';
 
 const SERVICES_OPTIONS = [
-    "קביעת תור לסקירת מערכות",
-    "שיחת ייעוץ כללית",
-    "שאלה אחרת"
+    "קביעת תור לסקירת מערכות או בדיקה אחרת",
+    "ייעוץ הריון, פוריות, מיילדות",
+    "משהו אחר"
 ];
 
 const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTitle?: boolean }) => {
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [validationError, setValidationError] = useState('');
+    const [highlightContactFields, setHighlightContactFields] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -27,13 +28,16 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        setValidationError('');
+        setHighlightContactFields(false);
+        setStatus('idle');
+
         // Validation: Either phone or email must be provided
         if (!formData.phone && !formData.email) {
             setValidationError('אנא הזיני מספר טלפון או כתובת אימייל כדי שנוכל ליצור קשר');
+            setHighlightContactFields(true);
             return;
         }
-
-        setValidationError('');
 
         setStatus('loading');
 
@@ -67,7 +71,7 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
             <div className="card sidebar-sticky contact-form-white shadow-[0_20px_50px_rgba(26,43,60,0.08)] !p-8 md:!p-12 rounded-3xl">
                 {showTitle && (
                     <div className="section-title !border-r-0 !pr-0 !mb-12 text-center">
-                        <h3 className="text-3xl font-black text-primary-navy">צרי קשר</h3>
+                        <h2 className="text-3xl font-black text-primary-navy">צרי קשר</h2>
                         <p className="text-slate-500 font-medium mt-2">נחזור אלייך בהקדם המקסימלי</p>
                     </div>
                 )}
@@ -85,21 +89,22 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
                 )}
 
                 {validationError && (
-                    <div className="mb-8 p-6 bg-amber-50 border border-amber-200 rounded-2xl">
+                    <div className="mb-8 p-6 bg-red-50 border border-red-200 border-l-4 border-l-red-500 rounded-2xl">
                         <div className="flex items-start gap-3">
-                            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                            <AlertCircle className="w-5 h-5 error-heading shrink-0 mt-0.5" />
                             <div>
-                                <h4 className="text-amber-800 font-bold">נא להשאיר לפחות טלפון או מייל תקינים כדי שנוכל לחזור אלייך.</h4>
-                                <p className="text-amber-700 text-sm mt-1">{validationError}</p>
+                                <h4 className="error-heading font-black">נא להשאיר לפחות טלפון או מייל תקינים כדי שנוכל לחזור אלייך.</h4>
                             </div>
                         </div>
                     </div>
                 )}
 
                 {status === 'error' && (
-                    <div className="mb-8 p-6 bg-red-50 border border-red-100 rounded-2xl text-center">
-                        <h4 className="text-red-800 font-bold">חלה שגיאה טכנית בשליחה</h4>
-                        <p className="text-red-700 text-sm">אנא צרי קשר טלפוני.</p>
+                    <div className="mb-8 p-6 bg-red-50 border border-red-200 border-l-4 border-l-red-500 rounded-2xl text-center">
+                        <div className="flex items-center justify-center gap-3 mb-3">
+                            <AlertCircle className="w-5 h-5 error-heading shrink-0" />
+                            <h4 className="error-heading font-bold">חלה שגיאה טכנית בשליחה. אנא צרי קשר טלפוני.</h4>
+                        </div>
                         
                           {/* Call Now Button Component */}
                         <Button
@@ -138,20 +143,36 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
                                 <label>טלפון ליצירת קשר</label>
                                 <input
                                     type="tel"
-                                    className="input-field !bg-slate-50 !border-slate-200 !text-primary-navy !rounded-2xl !py-4"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    className={`input-field !bg-slate-50 !text-primary-navy !rounded-2xl !py-4 ${(validationError || highlightContactFields) ? '!border-amber-500 !ring-2 !ring-amber-300 validation-highlight' : '!border-slate-200'}`}
                                     placeholder="050-1234567"
                                     value={formData.phone}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                    onChange={(e) => {
+                                        const onlyDigits = e.target.value.replace(/\D/g, '');
+                                        setFormData({ ...formData, phone: onlyDigits });
+                                        if (onlyDigits || formData.email) {
+                                            setHighlightContactFields(false);
+                                            setValidationError('');
+                                        }
+                                    }}
                                 />
                             </div>
                             <div className="form-row">
                                 <label>אימייל</label>
                                 <input
                                     type="email"
-                                    className="input-field !bg-slate-50 !border-slate-200 !text-primary-navy !rounded-2xl !py-4"
+                                    className={`input-field !bg-slate-50 !text-primary-navy !rounded-2xl !py-4 ${(validationError || highlightContactFields) ? '!border-amber-500 !ring-2 !ring-amber-300 validation-highlight' : '!border-slate-200'}`}
                                     placeholder="michal@example.com"
                                     value={formData.email}
-                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    onChange={(e) => {
+                                        const nextEmail = e.target.value;
+                                        setFormData({ ...formData, email: nextEmail });
+                                        if (nextEmail || formData.phone) {
+                                            setHighlightContactFields(false);
+                                            setValidationError('');
+                                        }
+                                    }}
                                 />
                             </div>
                         </div>
