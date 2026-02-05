@@ -25,6 +25,40 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
         message: ''
     });
 
+    const tryPHPFallback = async () => {
+        try {
+            // Try PHP fallback endpoint
+            const PHP_URL = 'https://drozyuval.com/contact.php'; // Production URL
+            
+            const response = await fetch(`${PHP_URL}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    setStatus('success');
+                    // Reset form on success
+                    setFormData({ name: '', phone: '', email: '', service: '', week: '', message: '' });
+                    console.log('PHP fallback successful:', result);
+                } else {
+                    setStatus('error');
+                    console.error('PHP fallback returned error:', result);
+                }
+            } else {
+                setStatus('error');
+                console.error('PHP fallback HTTP error:', response.status);
+            }
+        } catch (error) {
+            console.error('PHP fallback failed:', error);
+            setStatus('error');
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -42,7 +76,7 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
         setStatus('loading');
 
         try {
-            // API endpoint
+            // Try main API endpoint first
             const API_URL = 'https://api.drozyuval.com/api/inquiries';
             
             const response = await fetch(`${API_URL}`, {
@@ -58,11 +92,12 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
                 // Reset form on success
                 setFormData({ name: '', phone: '', email: '', service: '', week: '', message: '' });
             } else {
-                setStatus('error');
+                // If main API fails, try PHP fallback
+                await tryPHPFallback();
             }
         } catch (error) {
-            console.error('Fetch error during submission:', error);
-            setStatus('error');
+            console.error('Main API failed, trying PHP fallback:', error);
+            await tryPHPFallback();
         }
     };
 
@@ -80,11 +115,11 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
                     <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
-                        className="mb-8 p-6 bg-green-50 border border-green-100 rounded-2xl text-center"
+                        className="mb-8 p-6 success-container border rounded-2xl text-center"
                     >
-                        <CheckCircle2 className="w-10 h-10 text-green-600 mx-auto mb-3" />
-                        <h4 className="text-green-800 text-xl font-bold">הודעתך נשלחה בהצלחה!</h4>
-                        <p className="text-green-700 mt-2">ד"ר עוז או נציגתו יחזרו אלייך בהקדם.</p>
+                        <CheckCircle2 className="w-10 h-10 success-icon mx-auto mb-3" />
+                        <h4 className="success-title text-xl font-bold">הודעתך נשלחה בהצלחה!</h4>
+                        <p className="success-message mt-2">ד"ר עוז או נציגתו יחזרו אלייך בהקדם.</p>
                     </motion.div>
                 )}
 

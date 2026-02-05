@@ -9,6 +9,12 @@
   --white: #FFFFFF;
   --text: #2C3E50;
   --text-light: #5D6D7E;
+  
+  /* Success Colors */
+  --success-green: #16A34A;
+  --success-green-light: #22C55E;
+  --success-green-bg: #F0FDF4;
+  --success-green-border: #BBF7D0;
 
   --radius-lg: 24px;
   --radius-md: 16px;
@@ -699,4 +705,22 @@ section {
     gap: 60px;
     padding-top: 40px;
   }
+}
+
+/* Success Message Styles */
+.success-icon {
+  color: var(--success-green) !important;
+}
+
+.success-title {
+  color: var(--success-green) !important;
+}
+
+.success-message {
+  color: var(--success-green-light) !important;
+}
+
+.success-container {
+  background-color: var(--success-green-bg) !important;
+  border-color: var(--success-green-border) !important;
 }
