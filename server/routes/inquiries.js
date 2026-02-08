@@ -1,16 +1,19 @@
 /**
  * Inquiries Routes
  * API endpoints for website contact form submissions
+ * 
+ * Note: Email notifications are NOT sent on inquiry creation.
+ * Instead, a daily summary email is sent via the scheduled job.
  */
 
 const express = require('express');
 const router = express.Router();
 const inquiryRepository = require('../dal/repositories/inquiryRepository');
-const { sendInquiryNotification } = require('../integrations/email');
 
 /**
  * POST /api/inquiries
  * Create a new inquiry from website contact form
+ * Email notification is handled by daily summary job (not per-inquiry)
  */
 router.post('/', async (req, res) => {
     try {
@@ -33,18 +36,7 @@ router.post('/', async (req, res) => {
             source: 'website'
         });
 
-        console.log(`✅ New website inquiry: ${inquiry.inquiryId}`);
-
-        // Send email notification (don't wait for it, don't block the response)
-        sendInquiryNotification({
-            inquiryId: inquiry.inquiryId,
-            name,
-            phone,
-            email,
-            service,
-            week,
-            message
-        }).catch(err => console.error('Email notification error:', err));
+        console.log(`✅ New website inquiry: ${inquiry.inquiryId} (will be included in daily summary)`);
 
         res.status(201).json({ 
             success: true, 

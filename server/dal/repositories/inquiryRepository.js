@@ -179,6 +179,29 @@ async function findById(inquiryId) {
 }
 
 /**
+ * Find inquiries within a timestamp range
+ * Used by the daily summary job to get new inquiries since last run
+ * @param {Date} fromTimestamp - Start of the range
+ * @param {Date} toTimestamp - End of the range
+ * @returns {Array} - List of inquiries in the range
+ */
+async function findByTimestampRange(fromTimestamp, toTimestamp) {
+    try {
+        const sql = `
+            SELECT * FROM inquiries 
+            WHERE timestamp >= $1 AND timestamp <= $2
+            ORDER BY timestamp ASC
+        `;
+        
+        const results = await query(sql, [fromTimestamp, toTimestamp]);
+        return results.map(mapRowToInquiry);
+    } catch (error) {
+        console.error('Error fetching inquiries by timestamp range:', error.message);
+        throw error;
+    }
+}
+
+/**
  * Get all inquiries (for backward compatibility)
  */
 async function getAllInquiries() {
@@ -222,6 +245,7 @@ module.exports = {
     updateById,
     find,
     findById,
+    findByTimestampRange,
     getAllInquiries,
     saveInquiry
 };

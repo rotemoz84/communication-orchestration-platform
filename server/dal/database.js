@@ -150,6 +150,28 @@ async function createTables() {
                 EXECUTE FUNCTION update_updated_at_column();
         `);
 
+        // Job state table for tracking scheduled job execution
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS job_state (
+                job_name VARCHAR(100) PRIMARY KEY,
+                last_run_at TIMESTAMPTZ,
+                last_success_at TIMESTAMPTZ,
+                last_error TEXT,
+                metadata JSONB DEFAULT '{}',
+                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Create trigger for job_state updated_at
+        await pool.query(`
+            DROP TRIGGER IF EXISTS update_job_state_updated_at ON job_state;
+            CREATE TRIGGER update_job_state_updated_at
+                BEFORE UPDATE ON job_state
+                FOR EACH ROW
+                EXECUTE FUNCTION update_updated_at_column();
+        `);
+
         console.log('✅ Database tables ready');
     } catch (error) {
         console.error('Error creating tables:', error.message);

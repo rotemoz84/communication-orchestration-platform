@@ -26,6 +26,9 @@ const {
     schedulePeriodicSync 
 } = require('./integrations/google');
 
+// Services (Scheduled Jobs)
+const { inquirySummary } = require('./services');
+
 const app = express();
 
 // Middleware - CORS configuration
@@ -100,6 +103,22 @@ app.post(BASE_PATH + '/api/sync/calendar', async (req, res) => {
     }
 });
 
+// Manual trigger for daily inquiry summary (for testing)
+app.post(BASE_PATH + '/api/inquiries/send-summary', async (req, res) => {
+    try {
+        console.log('📧 Manual inquiry summary requested');
+        const result = await inquirySummary.triggerManualSummary();
+        res.json({ 
+            success: true, 
+            message: 'Inquiry summary email sent',
+            ...result
+        });
+    } catch (error) {
+        console.error('Summary error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 // ============================================
 // Error Handling
@@ -156,6 +175,13 @@ async function startServer() {
                 });
             } catch (syncError) {
                 console.log('⚠️ Calendar sync disabled (Google not configured)');
+            }
+
+            // Start daily inquiry summary scheduler (08:00 Israel time, Sun-Thu)
+            try {
+                inquirySummary.scheduleDailySummary();
+            } catch (summaryError) {
+                console.error('⚠️ Failed to schedule daily inquiry summary:', summaryError.message);
             }
         });
     } catch (error) {
