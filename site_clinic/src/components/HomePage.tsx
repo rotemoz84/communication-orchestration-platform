@@ -76,7 +76,7 @@ const HomePage = () => {
             />
 
             {/* Hero Section */}
-            <section id="about" className="hero-full">
+            <section id="about" className="hero-full" style={{ minHeight: "600px" }}>
                 <div className="hero-bg">
                     <img src={drOzImg} alt='ד"ר יובל עוז' />
                 </div>

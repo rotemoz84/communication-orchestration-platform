@@ -22,7 +22,10 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
         email: '',
         service: '',
         week: '',
-        message: ''
+        message: '',
+        privacyConsent: false,
+        sensitiveDataConsent: false,
+        callbackConsent: false
     });
 
     const tryPHPFallback = async () => {
@@ -43,7 +46,7 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
                 if (result.success) {
                     setStatus('success');
                     // Reset form on success
-                    setFormData({ name: '', phone: '', email: '', service: '', week: '', message: '' });
+                    setFormData({ name: '', phone: '', email: '', service: '', week: '', message: '', privacyConsent: false, sensitiveDataConsent: false, callbackConsent: false });
                     console.log('PHP fallback successful:', result);
                 } else {
                     setStatus('error');
@@ -90,7 +93,7 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
             if (response.ok) {
                 setStatus('success');
                 // Reset form on success
-                setFormData({ name: '', phone: '', email: '', service: '', week: '', message: '' });
+                setFormData({ name: '', phone: '', email: '', service: '', week: '', message: '', privacyConsent: false, sensitiveDataConsent: false, callbackConsent: false });
             } else {
                 // If main API fails, try PHP fallback
                 await tryPHPFallback();
@@ -236,6 +239,21 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
                                 onChange={(e) => setFormData({ ...formData, week: e.target.value })}
                             />
                         </div>
+                         {formData.week !== '' && (
+                                <div className="flex items-start gap-3">
+                                    <input
+                                        type="checkbox"
+                                        id="sensitive-data-consent"
+                                        required
+                                        checked={formData.sensitiveDataConsent}
+                                        onChange={(e) => setFormData({ ...formData, sensitiveDataConsent: e.target.checked })}
+                                        className="mt-1 w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                                    />
+                                    <label htmlFor="sensitive-data-consent" className="consent-label"> 
+                                        אני מסכימה לשתף מידע רפואי על מצב ההריון ומבינה שזה יסייע להציע לי שירות מתאים.
+                                    </label>
+                                </div>
+                            )}
 
                         <div className="form-row">
                             <label>רוצה להוסיף משהו אחר (לא חובה)</label>
@@ -245,6 +263,24 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
                                 value={formData.message}
                                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                             ></textarea>
+                        </div>
+
+                        {/* Privacy Consent Section */}
+                        <div className="space-y-4 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
+                            <div className="flex items-start gap-3">
+                                <input
+                                    type="checkbox"
+                                    id="privacy-consent"
+                                    required
+                                    checked={formData.privacyConsent}
+                                    onChange={(e) => setFormData({ ...formData, privacyConsent: e.target.checked })}
+                                    className="mt-1 w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                                />
+                                <label htmlFor="privacy-consent" className="consent-label">
+                                    קראתי את <a href="/privacy-policy" target="_self" className="text-teal-600 hover:text-teal-700 underline font-medium">מדיניות הפרטיות</a> ואני מסכימה לשתף פרטי יצירת קשר איתי.
+                                </label>
+                            </div>
+                           
                         </div>
 
                         <button
