@@ -312,6 +312,42 @@ section {
   width: 100%;
 }
 
+/* Button styling for navigation links */
+.nav-links button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--p-navy);
+  text-decoration: none;
+  padding: 0;
+  transition: color 0.2s;
+  position: relative;
+}
+
+.nav-links button:after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  right: 0;
+  width: 0;
+  height: 2px;
+  background: var(--s-teal);
+  transition: width 0.3s;
+}
+
+.nav-links button:hover,
+.nav-links button.active {
+  color: var(--s-teal);
+}
+
+.nav-links button:hover:after,
+.nav-links button.active:after {
+  width: 100%;
+}
+
 /* Mobile Menu System */
 .mobile-overlay {
   position: fixed;
@@ -404,6 +440,43 @@ section {
 
 .mobile-nav-link:hover:after,
 .mobile-nav-link.active:after {
+  width: 100%;
+}
+
+/* Button styling for mobile navigation links */
+.mobile-nav-stack button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 800;
+  text-decoration: none;
+  color: var(--p-navy);
+  display: inline-block;
+  position: relative;
+  transition: color 0.2s;
+  padding: 0;
+}
+
+.mobile-nav-stack button:after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  right: 0;
+  width: 0;
+  height: 3px;
+  background: var(--s-teal);
+  transition: width 0.3s;
+}
+
+.mobile-nav-stack button:hover,
+.mobile-nav-stack button.active {
+  color: var(--s-teal);
+}
+
+.mobile-nav-stack button:hover:after,
+.mobile-nav-stack button.active:after {
   width: 100%;
 }
 

@@ -277,7 +277,7 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
                                     className="mt-1 w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
                                 />
                                 <label htmlFor="privacy-consent" className="consent-label">
-                                    קראתי את <a href="/privacy-policy" target="_self" className="text-teal-600 hover:text-teal-700 underline font-medium">מדיניות הפרטיות</a> ואני מסכימה לשתף פרטי יצירת קשר איתי.
+                                    קראתי את <a href="#/privacy-policy" target="_self" className="text-teal-600 hover:text-teal-700 underline font-medium">מדיניות הפרטיות</a> ואני מסכימה לשתף פרטי יצירת קשר איתי.
                                 </label>
                             </div>
                            

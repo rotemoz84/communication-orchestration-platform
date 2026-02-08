@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface HeaderProps {
     activeSection: string;
@@ -10,6 +11,33 @@ interface HeaderProps {
 
 const Header = ({ activeSection, isTransparent, onNavigateHome }: HeaderProps) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const scrollToSection = (sectionId: string) => {
+        // If we're on privacy policy page, navigate to home first
+        if (location.pathname === '/privacy-policy') {
+            navigate(`/#/${sectionId}`);
+            setTimeout(() => {
+                document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
+            }, 300);
+        } else {
+            navigate(`#/${sectionId}`);
+            setTimeout(() => {
+                document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+        }
+    };
+
+    // Handle direct hash navigation on page load
+    useEffect(() => {
+        const hash = location.hash.replace('#/', '');
+        if (hash && ['specialties', 'experience', 'about', 'contact'].includes(hash)) {
+            setTimeout(() => {
+                document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+        }
+    }, [location.hash]);
 
     return (
         <>
@@ -22,10 +50,10 @@ const Header = ({ activeSection, isTransparent, onNavigateHome }: HeaderProps) =
                     </div>
 
                     <nav className="nav-links">
-                        <a href="#specialties" className={`nav-link ${activeSection === 'specialties' ? 'active' : ''} ${isTransparent ? 'text-white' : ''}`}>תחומי התמחות</a>
-                        <a href="#experience" className={`nav-link ${activeSection === 'experience' ? 'active' : ''} ${isTransparent ? 'text-white' : ''}`}>ניסיון מקצועי</a>
-                        {/* <a href="#articles" className={`nav-link ${activeSection === 'articles' ? 'active' : ''} ${isTransparent ? 'text-white' : ''}`}>מאמרים</a> */}
-                        <a href="#about" className={`nav-link ${activeSection === 'about' ? 'active' : ''} ${isTransparent ? 'text-white' : ''}`}>אודות</a>
+                        <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('specialties'); }} className={`nav-link ${activeSection === 'specialties' ? 'active' : ''} ${isTransparent ? 'text-white' : ''}`}>תחומי התמחות</a>
+                        <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('experience'); }} className={`nav-link ${activeSection === 'experience' ? 'active' : ''} ${isTransparent ? 'text-white' : ''}`}>ניסיון מקצועי</a>
+                        {/* <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('articles'); }} className={`nav-link ${activeSection === 'articles' ? 'active' : ''} ${isTransparent ? 'text-white' : ''}`}>מאמרים</a> */}
+                        <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('about'); }} className={`nav-link ${activeSection === 'about' ? 'active' : ''} ${isTransparent ? 'text-white' : ''}`}>אודות</a>
                     </nav>
 
                     <div className="flex items-center gap-2 sm:gap-4 flex-nowrap shrink-0">
@@ -60,11 +88,11 @@ const Header = ({ activeSection, isTransparent, onNavigateHome }: HeaderProps) =
                                 </button>
                             </div>
                             <nav className="mobile-nav-stack">
-                                <a href="#specialties" className={`mobile-nav-link ${activeSection === 'specialties' ? 'text-secondary-teal' : ''}`} onClick={() => setIsMenuOpen(false)}>תחומי התמחות</a>
-                                <a href="#experience" className={`mobile-nav-link ${activeSection === 'experience' ? 'text-secondary-teal' : ''}`} onClick={() => setIsMenuOpen(false)}>ניסיון מקצועי</a>
-                                {/* <a href="#articles" className={`mobile-nav-link ${activeSection === 'articles' ? 'text-secondary-teal' : ''}`} onClick={() => setIsMenuOpen(false)}>מאמרים</a> */}
-                                <a href="#about" className={`mobile-nav-link ${activeSection === 'about' ? 'text-secondary-teal' : ''}`} onClick={() => setIsMenuOpen(false)}>אודות</a>
-                                <a href="#contact" className="btn-primary" onClick={() => setIsMenuOpen(false)}>
+                                <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('specialties'); setIsMenuOpen(false); }} className={`mobile-nav-link ${activeSection === 'specialties' ? 'text-secondary-teal' : ''}`}>תחומי התמחות</a>
+                                <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('experience'); setIsMenuOpen(false); }} className={`mobile-nav-link ${activeSection === 'experience' ? 'text-secondary-teal' : ''}`}>ניסיון מקצועי</a>
+                                {/* <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('articles'); setIsMenuOpen(false); }} className={`mobile-nav-link ${activeSection === 'articles' ? 'text-secondary-teal' : ''}`}>מאמרים</a> */}
+                                <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('about'); setIsMenuOpen(false); }} className={`mobile-nav-link ${activeSection === 'about' ? 'text-secondary-teal' : ''}`}>אודות</a>
+                                <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('contact'); setIsMenuOpen(false); }} className="btn-primary">
                                     פנייה אישית
                                 </a>
                             </nav>

@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 
 // --- Components ---
@@ -8,11 +8,13 @@ import PrivacyPolicy from './components/PrivacyPolicy';
 
 // --- ScrollToTop Component ---
 const ScrollToTop = () => {
-  const { pathname } = useLocation();
+  const { hash } = useLocation();
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
+    if (hash === '' || hash === '#/') {
+      window.scrollTo(0, 0);
+    }
+  }, [hash]);
 
   return null;
 };

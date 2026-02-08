@@ -54,7 +54,7 @@ const Footer = () => {
                         © {new Date().getFullYear()} ד"ר יובל עוז | כל הזכויות שמורות.
                     </p>
                     <div className="flex items-center justify-center gap-8">
-                        <a href="/privacy-policy" className="footer-copy hover:text-secondary-teal transition-colors">מדיניות פרטיות</a>
+                        <a href="#/privacy-policy" className="footer-copy hover:text-secondary-teal transition-colors">מדיניות פרטיות</a>
                         <span className="text-slate-300 select-none"> | </span>
                         <a href="#" className="footer-copy hover:text-secondary-teal transition-colors">הנגשת אתר</a>
                     </div>
