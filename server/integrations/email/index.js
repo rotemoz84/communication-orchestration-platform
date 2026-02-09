@@ -64,21 +64,21 @@ async function testEmailConnection() {
 }
 
 /**
- * Format a single inquiry for the summary email
+ * Format a single inquiry as a table row (HTML)
  * @param {Object} inquiry - The inquiry data
- * @param {number} index - Position in the list
  */
-function formatInquiryForSummary(inquiry, index) {
+function formatInquiryAsTableRow(inquiry) {
+    const dateStr = new Date(inquiry.timestamp).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem' });
     return `
-${index + 1}. ${inquiry.name || 'לא צוין'}
-   טלפון: ${inquiry.phone || 'לא צוין'}
-   אימייל: ${inquiry.email || 'לא צוין'}
-   שירות: ${inquiry.service || 'לא צוין'}
-   שבוע: ${inquiry.pregnancyWeek || 'לא צוין'}
-   הודעה: ${inquiry.message || '-'}
-   מזהה: ${inquiry.inquiryId}
-   זמן: ${new Date(inquiry.timestamp).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem' })}
-`.trim();
+        <tr>
+            <td style="border: 1px solid #ddd; padding: 4px 6px; white-space: nowrap;">${dateStr}</td>
+            <td style="border: 1px solid #ddd; padding: 4px 6px; white-space: nowrap;">${inquiry.phone || '-'}</td>
+            <td style="border: 1px solid #ddd; padding: 4px 6px; white-space: nowrap;">${inquiry.name || '-'}</td>
+            <td style="border: 1px solid #ddd; padding: 4px 6px;">${inquiry.email || '-'}</td>
+            <td style="border: 1px solid #ddd; padding: 4px 6px; white-space: nowrap;">${inquiry.service || '-'}</td>
+            <td style="border: 1px solid #ddd; padding: 4px 6px;">${inquiry.message || '-'}</td>
+            <td style="border: 1px solid #ddd; padding: 4px 6px; text-align: center;">${inquiry.pregnancyWeek || '-'}</td>
+        </tr>`;
 }
 
 /**
@@ -108,40 +108,62 @@ async function sendInquirySummaryEmail(inquiries, fromTimestamp, toTimestamp) {
     const toDateStr = toTimestamp.toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem' });
     const todayStr = new Date().toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem' });
 
-    let emailContent;
+    let htmlContent;
     let subject;
 
     if (inquiries.length === 0) {
         subject = `סיכום פניות יומי - ${todayStr} (אין פניות חדשות)`;
-        emailContent = `
-סיכום פניות יומי
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-תקופה: ${fromDateStr} עד ${toDateStr}
-
-לא התקבלו פניות חדשות בתקופה זו.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-דוח זה נשלח אוטומטית כל יום (ראשון-חמישי) בשעה 08:00
-        `.trim();
+        htmlContent = `
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"></head>
+<body style="font-family: Arial, sans-serif; direction: rtl;">
+    <h2>סיכום פניות יומי</h2>
+    <p><strong>תקופה:</strong> ${fromDateStr} עד ${toDateStr}</p>
+    <p>לא התקבלו פניות חדשות בתקופה זו.</p>
+    <hr>
+    <p style="color: #666; font-size: 12px;">דוח זה נשלח אוטומטית כל יום (ראשון-חמישי) בשעה 08:00</p>
+</body>
+</html>`;
     } else {
+        // Sort inquiries by date (oldest first)
+        const sortedInquiries = [...inquiries].sort((a, b) => 
+            new Date(a.timestamp) - new Date(b.timestamp)
+        );
+
         subject = `סיכום פניות יומי - ${todayStr} (${inquiries.length} פניות)`;
-        const inquiriesList = inquiries.map((inq, idx) => formatInquiryForSummary(inq, idx)).join('\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n');
+        const tableRows = sortedInquiries.map(inq => formatInquiryAsTableRow(inq)).join('');
 
-        emailContent = `
-סיכום פניות יומי
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-תקופה: ${fromDateStr} עד ${toDateStr}
-סה"כ פניות: ${inquiries.length}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-${inquiriesList}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-דוח זה נשלח אוטומטית כל יום (ראשון-חמישי) בשעה 08:00
-        `.trim();
+        htmlContent = `
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"></head>
+<body style="font-family: Arial, sans-serif; direction: rtl;">
+    <h2>סיכום פניות יומי</h2>
+    <p><strong>תקופה:</strong> ${fromDateStr} עד ${toDateStr}</p>
+    <p><strong>סה"כ פניות:</strong> ${inquiries.length}</p>
+    
+    <table style="border-collapse: collapse; margin-top: 20px; font-size: 14px;">
+        <thead>
+            <tr style="background-color: #4CAF50; color: white;">
+                <th style="border: 1px solid #ddd; padding: 6px 8px; text-align: right; white-space: nowrap;">תאריך</th>
+                <th style="border: 1px solid #ddd; padding: 6px 8px; text-align: right; white-space: nowrap;">טלפון</th>
+                <th style="border: 1px solid #ddd; padding: 6px 8px; text-align: right; white-space: nowrap;">שם</th>
+                <th style="border: 1px solid #ddd; padding: 6px 8px; text-align: right; white-space: nowrap;">מייל</th>
+                <th style="border: 1px solid #ddd; padding: 6px 8px; text-align: right; white-space: nowrap;">שירות</th>
+                <th style="border: 1px solid #ddd; padding: 6px 8px; text-align: right; white-space: nowrap;">הערות</th>
+                <th style="border: 1px solid #ddd; padding: 6px 8px; text-align: center; white-space: nowrap;">שבוע</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${tableRows}
+        </tbody>
+    </table>
+    
+    <hr style="margin-top: 30px;">
+    <p style="color: #666; font-size: 12px;">דוח זה נשלח אוטומטית כל יום (ראשון-חמישי) בשעה 08:00</p>
+</body>
+</html>`;
     }
 
     try {
@@ -149,7 +171,7 @@ ${inquiriesList}
             from: senderEmail,
             to: recipientEmail,
             subject,
-            text: emailContent
+            html: htmlContent
         });
 
         console.log(`📧 Daily summary email sent: ${info.messageId}`);
