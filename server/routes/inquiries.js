@@ -73,6 +73,53 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * GET /api/inquiries/preview-summary
+ * Preview the daily summary data without sending email (for testing)
+ * MUST be defined before /:id route
+ */
+router.get('/preview-summary', async (req, res) => {
+    try {
+        const { inquirySummary } = require('../services');
+        console.log('👁️ Preview inquiry summary requested');
+        const { inquiries, fromTimestamp, toTimestamp } = await inquirySummary.getPendingInquiries();
+        
+        res.json({ 
+            success: true,
+            timeRange: {
+                from: fromTimestamp.toISOString(),
+                to: toTimestamp.toISOString()
+            },
+            inquiriesCount: inquiries.length,
+            inquiries: inquiries
+        });
+    } catch (error) {
+        console.error('Preview error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * POST /api/inquiries/send-summary
+ * Manually trigger the daily summary email (for testing)
+ * MUST be defined before /:id route
+ */
+router.post('/send-summary', async (req, res) => {
+    try {
+        const { inquirySummary } = require('../services');
+        console.log('📧 Manual inquiry summary requested');
+        const result = await inquirySummary.triggerManualSummary();
+        res.json({ 
+            success: true, 
+            message: 'Inquiry summary email sent',
+            ...result
+        });
+    } catch (error) {
+        console.error('Summary error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
  * GET /api/inquiries/:id
  * Get a specific inquiry by ID
  */

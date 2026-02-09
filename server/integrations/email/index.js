@@ -31,6 +31,10 @@ function initializeEmailTransporter() {
         auth: {
             user,
             pass
+        },
+        tls: {
+            // Allow self-signed certificates (common with shared hosting)
+            rejectUnauthorized: false
         }
     });
 
