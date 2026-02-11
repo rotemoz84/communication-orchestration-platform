@@ -26,8 +26,8 @@ const {
     schedulePeriodicSync 
 } = require('./integrations/google');
 
-// Services (Scheduled Jobs)
-const { inquirySummary } = require('./services');
+// Services
+// Note: inquirySummary is loaded by routes/inquiries.js for the cron endpoint
 
 const app = express();
 
@@ -160,12 +160,8 @@ async function startServer() {
                 console.log('⚠️ Calendar sync disabled (Google not configured)');
             }
 
-            // Start daily inquiry summary scheduler (08:00 Israel time, Sun-Thu)
-            try {
-                inquirySummary.scheduleDailySummary();
-            } catch (summaryError) {
-                console.error('⚠️ Failed to schedule daily inquiry summary:', summaryError.message);
-            }
+            // Daily inquiry summary is triggered via cPanel cron job
+            // Endpoint: POST /api/inquiries/send-summary
         });
     } catch (error) {
         console.error('❌ Failed to start server:', error.message);

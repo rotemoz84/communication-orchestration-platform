@@ -1,14 +1,13 @@
 /**
  * Inquiry Summary Service
- * Scheduled job that sends daily email summaries of inquiries
+ * Sends daily email summaries of inquiries
  * 
- * Schedule: Daily at 08:00 Israel time, except Friday and Saturday
- * On Sunday: includes inquiries from Friday and Saturday as well
+ * Triggered via cPanel cron job (more reliable on shared hosting)
+ * Endpoint: POST /api/inquiries/send-summary
  * 
  * Reliability: Tracks last successful send to ensure no inquiries are missed
  */
 
-const schedule = require('node-schedule');
 const inquiryRepository = require('../dal/repositories/inquiryRepository');
 const jobStateRepository = require('../dal/repositories/jobStateRepository');
 const { sendInquirySummaryEmail } = require('../integrations/email');
@@ -87,51 +86,7 @@ async function sendDailySummary() {
 }
 
 /**
- * Check if today is a day the job should run
- * Runs Sunday-Thursday (0, 1, 2, 3, 4)
- * Does NOT run Friday (5) or Saturday (6)
- */
-function shouldRunToday() {
-    const now = new Date();
-    // Get day of week in Israel timezone
-    const israelDay = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' })).getDay();
-    
-    // Sunday = 0, Monday = 1, ..., Thursday = 4, Friday = 5, Saturday = 6
-    return israelDay >= 0 && israelDay <= 4; // Sunday through Thursday
-}
-
-/**
- * Schedule the daily inquiry summary job
- * Runs at 08:00 Israel time, Sunday through Thursday
- */
-function scheduleDailySummary() {
-    const rule = new schedule.RecurrenceRule();
-    rule.hour = 8;
-    rule.minute = 0;
-    rule.tz = 'Asia/Jerusalem';
-    
-    // Only run Sunday through Thursday (0-4)
-    // On Sunday, we'll include Fri-Sat inquiries since we check from last successful run
-    rule.dayOfWeek = [0, 1, 2, 3, 4]; // Sunday, Monday, Tuesday, Wednesday, Thursday
-    
-    const job = schedule.scheduleJob(rule, async () => {
-        console.log('⏰ Scheduled inquiry summary triggered');
-        try {
-            await sendDailySummary();
-        } catch (error) {
-            // Error is already logged in sendDailySummary
-            // Job will retry on next scheduled run
-        }
-    });
-    
-    console.log('📅 Daily inquiry summary scheduled for 08:00 Israel time (Sun-Thu)');
-    console.log('   ℹ️  Sunday includes Friday and Saturday inquiries');
-    
-    return job;
-}
-
-/**
- * Manually trigger the summary (for testing or catch-up)
+ * Manually trigger the summary (called by cron endpoint)
  */
 async function triggerManualSummary() {
     console.log('🔧 Manual inquiry summary triggered');
@@ -139,7 +94,6 @@ async function triggerManualSummary() {
 }
 
 module.exports = {
-    scheduleDailySummary,
     sendDailySummary,
     triggerManualSummary,
     getPendingInquiries,
