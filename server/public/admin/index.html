@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="he" dir="rtl">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Admin</title>
+  <title>ניהול</title>
   <style>
     :root {
       --bg: #0f1419;
@@ -34,9 +34,9 @@
       padding: 2rem;
     }
     .layout {
-      max-width: 1200px;
+      max-width: 1600px;
       margin: 0 auto;
-      padding: 1rem;
+      padding: 1.25rem;
     }
     h1 { margin: 0 0 1rem; font-size: 1.25rem; font-weight: 600; }
     h2 { margin: 0 0 1rem; font-size: 1.1rem; font-weight: 600; }
@@ -96,6 +96,7 @@
       text-decoration: none;
     }
     .nav a:hover { text-decoration: underline; }
+    .nav .nav-logout { margin-inline-start: auto; }
     .filters {
       display: flex;
       gap: 1rem;
@@ -106,26 +107,56 @@
     .filters .form-group { margin-bottom: 0; }
     .filters label { margin-bottom: 0.25rem; }
     .filters input, .filters select { min-width: 120px; }
+    input[type="date"].date-picker-only { cursor: pointer; }
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.875rem;
+      font-size: 0.9375rem;
     }
     th, td {
-      padding: 0.5rem 0.75rem;
-      text-align: left;
+      padding: 0.65rem 0.9rem;
+      text-align: right;
       border-bottom: 1px solid var(--border);
     }
     th { color: var(--muted); font-weight: 500; }
     tr:hover { background: rgba(255,255,255,0.02); }
-    .cell-id { font-family: monospace; }
-    .cell-message { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cell-message {
+      max-width: 380px;
+      min-width: 120px;
+      white-space: normal;
+      word-break: break-word;
+      line-height: 1.4;
+    }
     .pagination {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.5rem;
       margin-top: 1rem;
+      flex-wrap: wrap;
     }
+    .pagination-total { color: var(--muted); font-size: 0.875rem; margin-left: 0.5rem; }
+    .pagination-pages { display: flex; align-items: center; gap: 0.25rem; }
+    .pagination-pages a, .pagination-pages span, .pagination-pages button {
+      min-width: 2rem;
+      height: 2rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 0.35rem;
+      font-size: 0.875rem;
+      border-radius: 6px;
+      color: var(--text);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .pagination-pages button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .pagination-pages a:hover, .pagination-pages button:not(:disabled):hover { background: var(--border); }
+    .pagination-pages .page-num[data-page]:hover { background: var(--border); }
+    .pagination-pages span.current { background: var(--accent); color: var(--bg); border-color: var(--accent); cursor: default; }
+    .pagination-pages span.ellipsis { border: none; background: none; cursor: default; min-width: 1rem; color: var(--muted); }
     .overlay {
       position: fixed;
       inset: 0;
@@ -133,10 +164,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 100;
+      z-index: 9999;
       padding: 1rem;
     }
-    .modal {
+    .overlay .modal {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -150,83 +181,75 @@
 </head>
 <body>
   <div id="app">
-    <div id="loading" class="loading">Checking session…</div>
+    <div id="loading" class="loading">בודק התחברות…</div>
 
     <div id="login-card" class="card hidden" style="margin: 2rem auto;">
-      <h1>Admin login</h1>
+      <h1>התחברות</h1>
       <div id="error" class="error" role="alert"></div>
       <form id="form">
         <div class="form-group">
-          <label for="email">Email</label>
+          <label for="email">אימייל</label>
           <input type="email" id="email" name="email" required autocomplete="email">
         </div>
         <div class="form-group">
-          <label for="password">Password</label>
+          <label for="password">סיסמה</label>
           <input type="password" id="password" name="password" required autocomplete="current-password">
         </div>
-        <button type="submit" id="submit">Sign in</button>
+        <button type="submit" id="submit">התחבר</button>
       </form>
-    </div>
-
-    <div id="dashboard" class="layout hidden">
-      <div class="nav">
-        <a href="#" id="nav-dashboard">Dashboard</a>
-        <a href="#inquiries" id="nav-inquiries">Inquiries</a>
-        <button type="button" id="logout" class="secondary">Sign out</button>
-      </div>
-      <h1>Admin</h1>
-      <p style="color: var(--muted);">Manage inquiries and send daily summary from the Inquiries page.</p>
     </div>
 
     <div id="inquiries-page" class="layout hidden">
       <div class="nav">
-        <a href="#" id="nav-dashboard2">Dashboard</a>
-        <a href="#inquiries">Inquiries</a>
-        <button type="button" id="logout2" class="secondary">Sign out</button>
+        <a href="#inquiries">פניות</a>
+        <button type="button" id="logout2" class="secondary nav-logout">התנתק</button>
       </div>
-      <h1>Inquiries</h1>
+      <h1>פניות</h1>
       <div class="filters">
         <div class="form-group">
-          <label for="filter-status">Status</label>
+          <label for="filter-search">חיפוש (שם, אימייל, טלפון)</label>
+          <input type="text" id="filter-search" placeholder="מכיל...">
+        </div>
+        <div class="form-group">
+          <label for="filter-status">סטטוס</label>
           <select id="filter-status">
-            <option value="">All</option>
-            <option value="new">new</option>
-            <option value="contacted">contacted</option>
-            <option value="scheduled">scheduled</option>
-            <option value="closed">closed</option>
+            <option value="">הכל</option>
+            <option value="new">חדש</option>
+            <option value="contacted">נוצר קשר</option>
+            <option value="scheduled">נקבע</option>
+            <option value="closed">סגור</option>
           </select>
         </div>
         <div class="form-group">
-          <label for="filter-source">Source</label>
+          <label for="filter-source">מקור</label>
           <select id="filter-source">
-            <option value="">All</option>
-            <option value="website">website</option>
-            <option value="whatsapp_bot">whatsapp_bot</option>
+            <option value="">הכל</option>
+            <option value="website">אתר</option>
+            <option value="whatsapp_bot">וואטסאפ</option>
           </select>
         </div>
         <div class="form-group">
-          <label for="filter-start">From date</label>
-          <input type="date" id="filter-start">
+          <label for="filter-start">מתאריך</label>
+          <input type="date" id="filter-start" class="date-picker-only">
         </div>
         <div class="form-group">
-          <label for="filter-end">To date</label>
-          <input type="date" id="filter-end">
+          <label for="filter-end">עד תאריך</label>
+          <input type="date" id="filter-end" class="date-picker-only">
         </div>
-        <button type="button" id="filter-apply">Apply</button>
+        <button type="button" id="filter-apply">החל</button>
       </div>
-      <div id="inquiries-loading" class="loading hidden">Loading…</div>
+      <div id="inquiries-loading" class="loading hidden">טוען…</div>
       <div id="inquiries-table-wrap">
         <table id="inquiries-table">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Phone</th>
-              <th>Email</th>
-              <th>Service</th>
-              <th>Message</th>
-              <th>Status</th>
+              <th>תאריך</th>
+              <th>שם</th>
+              <th>טלפון</th>
+              <th>אימייל</th>
+              <th>שירות</th>
+              <th>הודעה</th>
+              <th>סטטוס</th>
               <th></th>
             </tr>
           </thead>
@@ -238,25 +261,25 @@
   </div>
 
   <div id="edit-modal" class="overlay hidden">
-    <div class="modal">
-      <h2>Edit inquiry</h2>
+    <div class="modal" id="edit-modal-inner">
+      <h2>עריכת פנייה</h2>
       <input type="hidden" id="edit-inquiry-id">
       <div class="form-group">
-        <label for="edit-status">Status</label>
+        <label for="edit-status">סטטוס</label>
         <select id="edit-status">
-          <option value="new">new</option>
-          <option value="contacted">contacted</option>
-          <option value="scheduled">scheduled</option>
-          <option value="closed">closed</option>
+          <option value="new">חדש</option>
+          <option value="contacted">נוצר קשר</option>
+          <option value="scheduled">נקבע</option>
+          <option value="closed">סגור</option>
         </select>
       </div>
       <div class="form-group">
-        <label for="edit-notes">Notes</label>
+        <label for="edit-notes">הערות</label>
         <textarea id="edit-notes"></textarea>
       </div>
       <div class="modal-actions">
-        <button type="button" id="edit-save">Save</button>
-        <button type="button" id="edit-cancel" class="secondary">Cancel</button>
+        <button type="button" id="edit-save">שמירה</button>
+        <button type="button" id="edit-cancel" class="secondary">ביטול</button>
       </div>
     </div>
   </div>
@@ -280,15 +303,20 @@
       }
 
       function checkSession() {
-        return fetch(apiBase + '/auth/me', { credentials: 'include' })
+        var timeoutMs = 8000;
+        var fetchPromise = fetch(apiBase + '/auth/me', { credentials: 'include' })
           .then(function (r) {
             if (r.ok) return r.json();
             throw new Error('Not logged in');
           });
+        var timeoutPromise = new Promise(function (_, reject) {
+          setTimeout(function () { reject(new Error('timeout')); }, timeoutMs);
+        });
+        return Promise.race([fetchPromise, timeoutPromise]);
       }
 
       function showView(viewId) {
-        ['loading', 'login-card', 'dashboard', 'inquiries-page'].forEach(function (id) {
+        ['loading', 'login-card', 'inquiries-page'].forEach(function (id) {
           var el = getEl(id);
           if (el) el.classList.add('hidden');
         });
@@ -297,8 +325,8 @@
       }
 
       function onLoggedIn() {
-        showView('dashboard');
-        if (window.location.hash === '#inquiries') showInquiriesPage();
+        window.location.hash = 'inquiries';
+        showInquiriesPage();
       }
 
       function showLogin() {
@@ -307,20 +335,37 @@
 
       function showInquiriesPage() {
         showView('inquiries-page');
+        setDefaultDateRange();
         loadInquiries();
       }
 
       function applyHash() {
-        if (window.location.hash === '#inquiries') {
-          showInquiriesPage();
-        } else {
-          showView('dashboard');
-        }
+        showInquiriesPage();
       }
 
       // ——— Inquiries ———
+      function toDateString(d) {
+        var y = d.getFullYear();
+        var m = String(d.getMonth() + 1).padStart(2, '0');
+        var day = String(d.getDate()).padStart(2, '0');
+        return y + '-' + m + '-' + day;
+      }
+
+      function setDefaultDateRange() {
+        var startEl = getEl('filter-start');
+        var endEl = getEl('filter-end');
+        if (!startEl || !endEl) return;
+        if (startEl.value && endEl.value) return;
+        var end = new Date();
+        var start = new Date();
+        start.setDate(start.getDate() - 6);
+        startEl.value = toDateString(start);
+        endEl.value = toDateString(end);
+      }
+
       function getFilters() {
         return {
+          search: getEl('filter-search') && getEl('filter-search').value.trim() || '',
           status: getEl('filter-status') && getEl('filter-status').value || '',
           source: getEl('filter-source') && getEl('filter-source').value || '',
           startDate: getEl('filter-start') && getEl('filter-start').value || '',
@@ -342,6 +387,7 @@
         var params = new URLSearchParams();
         params.set('limit', String(PAGE_SIZE));
         params.set('offset', String((currentPage - 1) * PAGE_SIZE));
+        if (f.search) params.set('search', f.search);
         if (f.status) params.set('status', f.status);
         if (f.source) params.set('source', f.source);
         if (f.startDate) params.set('startDate', f.startDate);
@@ -355,59 +401,81 @@
           .then(function (data) {
             hide(loadingEl);
             if (wrap) show(wrap);
-            if (!data || !Array.isArray(data)) return;
+            if (!data || !data.items || !Array.isArray(data.items)) return;
+
+            var items = data.items;
+            var total = data.total || 0;
+            var totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
             var dateOpt = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jerusalem' };
-            tbody.innerHTML = data.map(function (row) {
+            tbody.innerHTML = items.map(function (row) {
               var dateStr = row.timestamp ? new Date(row.timestamp).toLocaleString('he-IL', dateOpt) : '—';
-              var msg = (row.message || '—').replace(/</g, '&lt;').substring(0, 80);
-              if ((row.message || '').length > 80) msg += '…';
+              var msg = (row.message || '—').replace(/</g, '&lt;').substring(0, 220);
+              if ((row.message || '').length > 220) msg += '…';
               return '<tr>' +
                 '<td>' + dateStr + '</td>' +
-                '<td class="cell-id">' + (row.inquiryId || '—') + '</td>' +
                 '<td>' + (row.name || '—') + '</td>' +
                 '<td>' + (row.phone || '—') + '</td>' +
                 '<td>' + (row.email || '—') + '</td>' +
                 '<td>' + (row.service || '—') + '</td>' +
                 '<td class="cell-message" title="' + (row.message || '').replace(/"/g, '&quot;') + '">' + msg + '</td>' +
                 '<td>' + (row.status || '—') + '</td>' +
-                '<td><button type="button" class="secondary btn-edit" data-id="' + (row.inquiryId || '') + '">Edit</button></td>' +
+                '<td><button type="button" class="secondary btn-edit" data-id="' + (row.inquiryId || '') + '" data-status="' + (row.status || 'new') + '" data-notes="' + (row.notes || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;') + '">עריכה</button></td>' +
                 '</tr>';
             }).join('');
 
-            // Pagination: simple prev/next (we don't have total count; show next if we got full page)
-            var hasMore = data.length === PAGE_SIZE;
-            paginationEl.innerHTML = 
-              '<span>Page ' + currentPage + '</span>' +
-              '<button type="button" id="page-prev"' + (currentPage <= 1 ? ' disabled' : '') + '>Previous</button>' +
-              '<button type="button" id="page-next"' + (!hasMore ? ' disabled' : '') + '>Next</button>';
-            getEl('page-prev').onclick = function () { if (currentPage > 1) { currentPage--; loadInquiries(); } };
-            getEl('page-next').onclick = function () { if (hasMore) { currentPage++; loadInquiries(); } };
+            // Pagination: total, page numbers, prev/next
+            var from = total === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+            var to = Math.min((currentPage - 1) * PAGE_SIZE + items.length, total);
+            var totalText = total === 0 ? '0 פריטים' : 'מציג ' + from + '–' + to + ' מתוך ' + total;
+            var pagesHtml = '';
+            pagesHtml += '<button type="button" class="page-prev"' + (currentPage <= 1 ? ' disabled' : '') + '>הקודם</button>';
+            var maxVisible = 7;
+            var startPage = Math.max(1, Math.min(currentPage - Math.floor(maxVisible / 2), totalPages - maxVisible + 1));
+            var endPage = Math.min(totalPages, startPage + maxVisible - 1);
+            if (startPage > 1) {
+              pagesHtml += '<span class="page-num" data-page="1">1</span>';
+              if (startPage > 2) pagesHtml += '<span class="ellipsis">…</span>';
+            }
+            for (var p = startPage; p <= endPage; p++) {
+              if (p === currentPage) pagesHtml += '<span class="page-num current">' + p + '</span>';
+              else pagesHtml += '<span class="page-num" data-page="' + p + '">' + p + '</span>';
+            }
+            if (endPage < totalPages) {
+              if (endPage < totalPages - 1) pagesHtml += '<span class="ellipsis">…</span>';
+              pagesHtml += '<span class="page-num" data-page="' + totalPages + '">' + totalPages + '</span>';
+            }
+            pagesHtml += '<button type="button" class="page-next"' + (currentPage >= totalPages ? ' disabled' : '') + '>הבא</button>';
 
-            tbody.querySelectorAll('.btn-edit').forEach(function (btn) {
-              btn.onclick = function () { openEditModal(btn.getAttribute('data-id')); };
+            paginationEl.innerHTML = '<span class="pagination-total">' + totalText + '</span><div class="pagination-pages">' + pagesHtml + '</div>';
+            paginationEl.querySelectorAll('.page-prev').forEach(function (btn) {
+              btn.onclick = function () { if (currentPage > 1) { currentPage--; loadInquiries(); } };
+            });
+            paginationEl.querySelectorAll('.page-next').forEach(function (btn) {
+              btn.onclick = function () { if (currentPage < totalPages) { currentPage++; loadInquiries(); } };
+            });
+            paginationEl.querySelectorAll('.page-num[data-page]').forEach(function (el) {
+              var p = parseInt(el.getAttribute('data-page'), 10);
+              el.onclick = function () { if (p !== currentPage) { currentPage = p; loadInquiries(); } };
             });
           })
           .catch(function () {
             hide(loadingEl);
             if (wrap) show(wrap);
-            tbody.innerHTML = '<tr><td colspan="9">Failed to load inquiries.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8">טעינת הפניות נכשלה.</td></tr>';
           });
       }
 
-      function openEditModal(inquiryId) {
-        fetch(apiBase + '/inquiries/' + encodeURIComponent(inquiryId), { credentials: 'include' })
-          .then(function (r) {
-            if (r.status === 401) { showLogin(); return null; }
-            return r.json();
-          })
-          .then(function (inquiry) {
-            if (!inquiry) return;
-            getEl('edit-inquiry-id').value = inquiry.inquiryId;
-            getEl('edit-status').value = inquiry.status || 'new';
-            getEl('edit-notes').value = inquiry.notes || '';
-            show(getEl('edit-modal'));
-          });
+      function openEditModal(btn) {
+        if (!btn) return;
+        var id = btn.getAttribute('data-id');
+        if (!id) return;
+        var status = btn.getAttribute('data-status') || 'new';
+        var notes = btn.getAttribute('data-notes') || '';
+        getEl('edit-inquiry-id').value = id;
+        getEl('edit-status').value = status;
+        getEl('edit-notes').value = notes.replace(/&lt;/g, '<').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+        show(getEl('edit-modal'));
       }
 
       function saveEdit() {
@@ -431,16 +499,15 @@
       }
 
       // ——— Init ———
+      showLogin();
       checkSession()
         .then(function (data) {
           if (data && data.user) {
             onLoggedIn();
             applyHash();
-          } else {
-            showLogin();
           }
         })
-        .catch(function () { showLogin(); });
+        .catch(function () {});
 
       window.addEventListener('hashchange', function () {
         if (getEl('login-card') && !getEl('login-card').classList.contains('hidden')) return;
@@ -467,30 +534,46 @@
               onLoggedIn();
               applyHash();
             } else {
-              showError(data.error || 'Login failed');
+              showError(data.error || 'ההתחברות נכשלה');
               btn.disabled = false;
             }
           })
           .catch(function () {
-            showError('Network error. Please try again.');
+            showError('שגיאת רשת. נסה שוב.');
             btn.disabled = false;
           });
       });
 
-      getEl('logout').addEventListener('click', doLogout);
       if (getEl('logout2')) getEl('logout2').addEventListener('click', doLogout);
       function doLogout() {
         fetch(apiBase + '/auth/logout', { method: 'POST', credentials: 'include' })
           .then(function () { window.location.reload(); });
       }
 
-      getEl('nav-dashboard').addEventListener('click', function (e) { e.preventDefault(); window.location.hash = ''; applyHash(); });
-      if (getEl('nav-dashboard2')) getEl('nav-dashboard2').addEventListener('click', function (e) { e.preventDefault(); window.location.hash = ''; applyHash(); });
-      getEl('nav-inquiries').addEventListener('click', function (e) { e.preventDefault(); window.location.hash = 'inquiries'; applyHash(); });
 
       getEl('filter-apply').addEventListener('click', function () { currentPage = 1; loadInquiries(); });
+      var tableWrap = getEl('inquiries-table-wrap');
+      if (tableWrap) tableWrap.addEventListener('click', function (e) {
+        var btn = e.target.closest('.btn-edit');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        openEditModal(btn);
+      });
+      [getEl('filter-start'), getEl('filter-end')].forEach(function (el) {
+        if (!el) return;
+        el.addEventListener('keydown', function (e) { e.preventDefault(); });
+        el.addEventListener('mousedown', function (e) {
+          e.preventDefault();
+          if (el.showPicker) el.showPicker();
+        });
+      });
       getEl('edit-save').addEventListener('click', saveEdit);
       getEl('edit-cancel').addEventListener('click', function () { hide(getEl('edit-modal')); });
+      getEl('edit-modal-inner').addEventListener('click', function (e) { e.stopPropagation(); });
+      getEl('edit-modal').addEventListener('click', function (e) {
+        if (e.target === getEl('edit-modal')) hide(getEl('edit-modal'));
+      });
     })();
   </script>
 </body>

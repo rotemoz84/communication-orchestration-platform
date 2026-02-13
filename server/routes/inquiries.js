@@ -55,18 +55,20 @@ router.post('/', async (req, res) => {
  */
 router.get('/', requireAuth, async (req, res) => {
     try {
-        const { startDate, endDate, status, source, limit, offset } = req.query;
-        
-        const inquiries = await inquiryRepository.find({
-            startDate,
-            endDate,
-            status,
-            source,
-            limit: limit ? parseInt(limit) : 10,
-            offset: offset ? parseInt(offset) : 0
-        });
+        const { startDate, endDate, status, source, search, limit, offset } = req.query;
+        const searchTerm = typeof search === 'string' ? search.trim() : '';
+        const filters = { startDate, endDate, status, source, search: searchTerm || undefined };
 
-        res.json(inquiries);
+        const [inquiries, total] = await Promise.all([
+            inquiryRepository.find({
+                ...filters,
+                limit: limit ? parseInt(limit) : 10,
+                offset: offset ? parseInt(offset) : 0
+            }),
+            inquiryRepository.count(filters)
+        ]);
+
+        res.json({ items: inquiries, total });
     } catch (error) {
         console.error('Error fetching inquiries:', error.message);
         res.status(500).json({ error: 'Failed to fetch inquiries' });

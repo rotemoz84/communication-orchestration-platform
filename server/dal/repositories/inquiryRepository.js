@@ -112,6 +112,7 @@ async function find(filters = {}) {
             endDate, 
             status,
             source,
+            search,
             limit = 100,
             offset = 0 
         } = filters;
@@ -120,6 +121,12 @@ async function find(filters = {}) {
         const params = [];
         let paramIndex = 1;
         
+        if (search && String(search).trim()) {
+            const pattern = '%' + String(search).trim() + '%';
+            conditions.push(`(name ILIKE $${paramIndex} OR email ILIKE $${paramIndex} OR phone ILIKE $${paramIndex})`);
+            params.push(pattern);
+            paramIndex++;
+        }
         if (startDate) {
             conditions.push(`timestamp >= $${paramIndex}`);
             params.push(startDate + ' 00:00:00');
@@ -154,6 +161,58 @@ async function find(filters = {}) {
         return results.map(mapRowToInquiry);
     } catch (error) {
         console.error('Error fetching inquiries:', error.message);
+        throw error;
+    }
+}
+
+/**
+ * Count inquiries with same filters as find (no limit/offset)
+ * @param {Object} filters - Same filter keys as find
+ * @returns {number}
+ */
+async function count(filters = {}) {
+    try {
+        const { startDate, endDate, status, source, search } = filters;
+        const conditions = [];
+        const params = [];
+        let paramIndex = 1;
+
+        if (search && String(search).trim()) {
+            const term = String(search).trim();
+            const pattern = '%' + term + '%';
+            conditions.push(`(COALESCE(name, '') ILIKE $${paramIndex} OR COALESCE(email, '') ILIKE $${paramIndex} OR COALESCE(phone, '') ILIKE $${paramIndex})`);
+            params.push(pattern);
+            paramIndex++;
+        }
+        if (startDate) {
+            conditions.push(`timestamp >= $${paramIndex}`);
+            params.push(startDate + ' 00:00:00');
+            paramIndex++;
+        }
+        if (endDate) {
+            conditions.push(`timestamp <= $${paramIndex}`);
+            params.push(endDate + ' 23:59:59');
+            paramIndex++;
+        }
+        if (status) {
+            conditions.push(`status = $${paramIndex}`);
+            params.push(status);
+            paramIndex++;
+        }
+        if (source) {
+            conditions.push(`source = $${paramIndex}`);
+            params.push(source);
+            paramIndex++;
+        }
+
+        let sql = 'SELECT COUNT(*)::int AS total FROM inquiries';
+        if (conditions.length > 0) {
+            sql += ' WHERE ' + conditions.join(' AND ');
+        }
+        const results = await query(sql, params);
+        return results[0] ? results[0].total : 0;
+    } catch (error) {
+        console.error('Error counting inquiries:', error.message);
         throw error;
     }
 }
@@ -244,6 +303,7 @@ module.exports = {
     create,
     updateById,
     find,
+    count,
     findById,
     findByTimestampRange,
     getAllInquiries,
