@@ -129,6 +129,9 @@ async function createTables() {
                 source VARCHAR(50) DEFAULT 'website',
                 status VARCHAR(20) DEFAULT 'new',
                 notes TEXT,
+                is_relevant_customer VARCHAR(20) DEFAULT 'unknown' CHECK (is_relevant_customer IN ('relevant', 'not_relevant', 'potential', 'unknown')),
+                communication_status VARCHAR(20) DEFAULT 'pending' CHECK (communication_status IN ('pending', 'active', 'completed', 'on_hold')),
+                customer_notes TEXT,
                 created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
             )
@@ -168,6 +171,40 @@ async function createTables() {
             DROP TRIGGER IF EXISTS update_job_state_updated_at ON job_state;
             CREATE TRIGGER update_job_state_updated_at
                 BEFORE UPDATE ON job_state
+                FOR EACH ROW
+                EXECUTE FUNCTION update_updated_at_column();
+        `);
+
+        // WhatsApp messages table for tracking WhatsApp conversations
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS whatsapp_messages (
+                id SERIAL PRIMARY KEY,
+                message_id VARCHAR(20) UNIQUE NOT NULL,
+                timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                phone_number VARCHAR(20) NOT NULL,
+                profile_name VARCHAR(100),
+                message TEXT NOT NULL,
+                direction VARCHAR(10) DEFAULT 'incoming' CHECK (direction IN ('incoming', 'outgoing')),
+                twilio_message_sid VARCHAR(50) DEFAULT NULL,
+                media_type VARCHAR(20) DEFAULT NULL,
+                media_url TEXT DEFAULT NULL,
+                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Create indexes for whatsapp_messages
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_timestamp ON whatsapp_messages(timestamp);
+            CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_phone_number ON whatsapp_messages(phone_number);
+            CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_direction ON whatsapp_messages(direction);
+        `);
+
+        // Create trigger for whatsapp_messages updated_at
+        await pool.query(`
+            DROP TRIGGER IF EXISTS update_whatsapp_messages_updated_at ON whatsapp_messages;
+            CREATE TRIGGER update_whatsapp_messages_updated_at
+                BEFORE UPDATE ON whatsapp_messages
                 FOR EACH ROW
                 EXECUTE FUNCTION update_updated_at_column();
         `);

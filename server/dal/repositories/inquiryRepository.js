@@ -58,7 +58,7 @@ async function create(inquiryData) {
  */
 async function updateById(inquiryId, updateData) {
     try {
-        const { status, notes } = updateData;
+        const { status, notes, isRelevantCustomer, communicationStatus, customerNotes } = updateData;
         
         const updates = [];
         const params = [];
@@ -72,6 +72,21 @@ async function updateById(inquiryId, updateData) {
         if (notes !== undefined) {
             updates.push(`notes = $${paramIndex}`);
             params.push(notes);
+            paramIndex++;
+        }
+        if (isRelevantCustomer !== undefined) {
+            updates.push(`is_relevant_customer = $${paramIndex}`);
+            params.push(isRelevantCustomer);
+            paramIndex++;
+        }
+        if (communicationStatus !== undefined) {
+            updates.push(`communication_status = $${paramIndex}`);
+            params.push(communicationStatus);
+            paramIndex++;
+        }
+        if (customerNotes !== undefined) {
+            updates.push(`customer_notes = $${paramIndex}`);
+            params.push(customerNotes);
             paramIndex++;
         }
         
@@ -234,6 +249,9 @@ function mapRowToInquiry(row) {
         source: row.source,
         status: row.status,
         notes: row.notes,
+        isRelevantCustomer: row.is_relevant_customer,
+        communicationStatus: row.communication_status,
+        customerNotes: row.customer_notes,
         createdAt: row.created_at,
         updatedAt: row.updated_at
     };

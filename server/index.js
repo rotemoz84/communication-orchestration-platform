@@ -19,6 +19,7 @@ const whatsappRoutes = require('./routes/whatsapp');
 const callRoutes = require('./routes/calls');
 const inquiryRoutes = require('./routes/inquiries');
 const ivrRoutes = require('./ivr/routes');
+const cmsRoutes = require('./routes/cms');
 
 // Google Integrations (Calendar Sync)
 const { 
@@ -46,6 +47,9 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // For Twilio webhooks
+
+// Serve static files for CMS
+app.use(express.static('../CMS'));
 
 // ============================================
 // Route Prefix (for cPanel deployments)
@@ -82,6 +86,9 @@ app.use(BASE_PATH + '/api/calls', callRoutes);
 
 // Inquiries API (website contact form)
 app.use(BASE_PATH + '/api/inquiries', inquiryRoutes);
+
+// CMS API endpoints
+app.use(BASE_PATH + '/api/cms', cmsRoutes);
 
 // ============================================
 // Admin/Management Endpoints
