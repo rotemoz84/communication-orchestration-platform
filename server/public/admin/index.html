@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin – Login</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --border: #2d3a4f;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-hover: #79b8ff;
+      --error: #f85149;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .card {
+      width: 100%;
+      max-width: 360px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+    }
+    h1 {
+      margin: 0 0 1.5rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+    input {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      font-size: 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .error {
+      margin-bottom: 1rem;
+      padding: 0.6rem 0.75rem;
+      font-size: 0.875rem;
+      color: var(--error);
+      background: rgba(248, 81, 73, 0.1);
+      border-radius: 8px;
+      display: none;
+    }
+    .error.visible { display: block; }
+    button {
+      width: 100%;
+      margin-top: 0.5rem;
+      padding: 0.7rem 1rem;
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--bg);
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover { background: var(--accent-hover); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .loading { color: var(--muted); text-align: center; padding: 2rem; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="loading" class="loading">Checking session…</div>
+    <div id="login-card" class="card" style="display: none;">
+      <h1>Admin login</h1>
+      <div id="error" class="error" role="alert"></div>
+      <form id="form">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required autocomplete="current-password">
+        </div>
+        <button type="submit" id="submit">Sign in</button>
+      </form>
+    </div>
+    <div id="dashboard" class="card" style="display: none;">
+      <h1>Admin</h1>
+      <p style="color: var(--muted);">You are logged in. Inquiries table will be added in the next step.</p>
+      <button type="button" id="logout" style="width: auto; margin-top: 1rem;">Sign out</button>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var path = window.location.pathname.replace(/\/admin.*$/, '') || '';
+      var apiBase = path + '/api';
+
+      function show(el) { el.style.display = ''; }
+      function hide(el) { el.style.display = 'none'; }
+      function showError(msg) {
+        var el = document.getElementById('error');
+        el.textContent = msg || '';
+        el.classList.toggle('visible', !!msg);
+      }
+
+      function checkSession() {
+        return fetch(apiBase + '/auth/me', { credentials: 'include' })
+          .then(function (r) {
+            if (r.ok) return r.json();
+            throw new Error('Not logged in');
+          });
+      }
+
+      function goToDashboard() {
+        hide(document.getElementById('loading'));
+        hide(document.getElementById('login-card'));
+        show(document.getElementById('dashboard'));
+      }
+
+      function showLogin() {
+        hide(document.getElementById('loading'));
+        hide(document.getElementById('dashboard'));
+        show(document.getElementById('login-card'));
+      }
+
+      // On load: check session
+      checkSession()
+        .then(function (data) {
+          if (data && data.user) goToDashboard();
+          else showLogin();
+        })
+        .catch(function () { showLogin(); });
+
+      // Login form
+      document.getElementById('form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var email = document.getElementById('email').value.trim();
+        var password = document.getElementById('password').value;
+        var btn = document.getElementById('submit');
+        showError('');
+        btn.disabled = true;
+
+        fetch(apiBase + '/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email: email, password: password })
+        })
+          .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
+          .then(function (_ref) {
+            var ok = _ref.ok, data = _ref.data;
+            if (ok && data.success) {
+              goToDashboard();
+            } else {
+              showError(data.error || 'Login failed');
+              btn.disabled = false;
+            }
+          })
+          .catch(function (err) {
+            showError('Network error. Please try again.');
+            btn.disabled = false;
+          });
+      });
+
+      // Logout
+      document.getElementById('logout').addEventListener('click', function () {
+        fetch(apiBase + '/auth/logout', { method: 'POST', credentials: 'include' })
+          .then(function () {
+            window.location.reload();
+          });
+      });
+    })();
+  </script>
+</body>
+</html>

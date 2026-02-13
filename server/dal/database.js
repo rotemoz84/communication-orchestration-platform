@@ -150,6 +150,29 @@ async function createTables() {
                 EXECUTE FUNCTION update_updated_at_column();
         `);
 
+        // Admin users (for admin site login)
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS admin_users (
+                id SERIAL PRIMARY KEY,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                password_hash VARCHAR(255) NOT NULL,
+                display_name VARCHAR(100),
+                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Session store for connect-pg-simple (express-session)
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS session (
+                sid VARCHAR NOT NULL PRIMARY KEY,
+                sess JSON NOT NULL,
+                expire TIMESTAMPTZ NOT NULL
+            )
+        `);
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS IDX_session_expire ON session(expire);
+        `);
+
         // Job state table for tracking scheduled job execution
         await pool.query(`
             CREATE TABLE IF NOT EXISTS job_state (

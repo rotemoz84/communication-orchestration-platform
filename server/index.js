@@ -4,6 +4,7 @@
  */
 
 require('dotenv').config();
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 
@@ -11,9 +12,10 @@ const cors = require('cors');
 const { config, validateConfig } = require('./config');
 
 // DAL (Database)
-const { initDatabase } = require('./dal');
+const { initDatabase, getPool } = require('./dal');
 
 // Routes
+const authRoutes = require('./routes/auth');
 const bookingRoutes = require('./routes/booking');
 const whatsappRoutes = require('./routes/whatsapp');
 const callRoutes = require('./routes/calls');
@@ -77,8 +79,10 @@ app.use(BASE_PATH + '/api/whatsapp', whatsappRoutes);
 // Call records API
 app.use(BASE_PATH + '/api/calls', callRoutes);
 
-// Inquiries API (website contact form)
+// Inquiries API (website contact form) - mount now; admin routes protected via middleware later
 app.use(BASE_PATH + '/api/inquiries', inquiryRoutes);
+
+// Auth routes (login/logout/me) - mounted after session in startServer()
 
 // ============================================
 // Admin/Management Endpoints
@@ -131,6 +135,36 @@ async function startServer() {
         } catch (dbError) {
             console.error('⚠️ Database connection failed:', dbError.message);
             console.log('⚠️ Server will continue without database');
+        }
+
+        // Session (requires DB pool) + Auth routes - only when DB is available
+        if (dbConnected) {
+            const session = require('express-session');
+            const PGStore = require('connect-pg-simple')(session);
+            const pool = getPool();
+            app.use(session({
+                store: new PGStore({ pool, tableName: 'session' }),
+                secret: process.env.SESSION_SECRET || 'change-me-in-production',
+                resave: false,
+                saveUninitialized: false,
+                cookie: {
+                    httpOnly: true,
+                    secure: config.nodeEnv === 'production',
+                    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+                    sameSite: 'lax'
+                }
+            }));
+            app.use(BASE_PATH + '/api/auth', authRoutes);
+
+            // Admin SPA: serve static files and SPA fallback
+            const adminPath = path.join(__dirname, 'public', 'admin');
+            app.use(BASE_PATH + '/admin', express.static(adminPath));
+            app.get(BASE_PATH + '/admin', (req, res) => {
+                res.sendFile(path.join(adminPath, 'index.html'));
+            });
+            app.get(BASE_PATH + '/admin/*', (req, res) => {
+                res.sendFile(path.join(adminPath, 'index.html'));
+            });
         }
 
         app.listen(config.port, () => {
