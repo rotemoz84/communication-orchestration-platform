@@ -79,10 +79,7 @@ app.use(BASE_PATH + '/api/whatsapp', whatsappRoutes);
 // Call records API
 app.use(BASE_PATH + '/api/calls', callRoutes);
 
-// Inquiries API (website contact form) - mount now; admin routes protected via middleware later
-app.use(BASE_PATH + '/api/inquiries', inquiryRoutes);
-
-// Auth routes (login/logout/me) - mounted after session in startServer()
+// Inquiries API: mounted after session in startServer() so auth works for admin endpoints
 
 // ============================================
 // Admin/Management Endpoints
@@ -147,14 +144,16 @@ async function startServer() {
                 secret: process.env.SESSION_SECRET || 'change-me-in-production',
                 resave: false,
                 saveUninitialized: false,
+                rolling: true, // reset expiry on every request → logout after 1h of *inactivity*
                 cookie: {
                     httpOnly: true,
                     secure: config.nodeEnv === 'production',
-                    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+                    maxAge: Number(config.session.maxAgeMs) || 60 * 60 * 1000, // 1h if missing/invalid
                     sameSite: 'lax'
                 }
             }));
             app.use(BASE_PATH + '/api/auth', authRoutes);
+            app.use(BASE_PATH + '/api/inquiries', inquiryRoutes);
 
             // Admin SPA: serve static files and SPA fallback
             const adminPath = path.join(__dirname, 'public', 'admin');

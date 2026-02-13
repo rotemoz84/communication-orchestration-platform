@@ -40,7 +40,15 @@ const config = {
     },
     
     // Business
-    repPhoneNumber: process.env.REP_PHONE_NUMBER || '+972500000000'
+    repPhoneNumber: process.env.REP_PHONE_NUMBER || '+972500000000',
+
+    // Admin session (cookie lifetime)
+    session: {
+        // Session duration in ms. Default 1 hour. Use SESSION_MAX_AGE_HOURS (e.g. 0.5, 1, 2) or SESSION_MAX_AGE_MS.
+        maxAgeMs: process.env.SESSION_MAX_AGE_MS
+            ? parseInt(process.env.SESSION_MAX_AGE_MS, 10)
+            : (parseFloat(process.env.SESSION_MAX_AGE_HOURS) || 1) * 60 * 60 * 1000
+    }
 };
 
 /**

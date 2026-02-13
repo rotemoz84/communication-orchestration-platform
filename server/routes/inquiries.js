@@ -9,6 +9,7 @@
 const express = require('express');
 const router = express.Router();
 const inquiryRepository = require('../dal/repositories/inquiryRepository');
+const { requireAuth } = require('../middleware/requireAuth');
 
 /**
  * POST /api/inquiries
@@ -50,9 +51,9 @@ router.post('/', async (req, res) => {
 
 /**
  * GET /api/inquiries
- * Get all inquiries with optional filters
+ * Get all inquiries with optional filters (admin only; default limit 10, sort date desc)
  */
-router.get('/', async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
     try {
         const { startDate, endDate, status, source, limit, offset } = req.query;
         
@@ -61,7 +62,7 @@ router.get('/', async (req, res) => {
             endDate,
             status,
             source,
-            limit: limit ? parseInt(limit) : 100,
+            limit: limit ? parseInt(limit) : 10,
             offset: offset ? parseInt(offset) : 0
         });
 
@@ -77,7 +78,7 @@ router.get('/', async (req, res) => {
  * Preview the daily summary data without sending email (for testing)
  * MUST be defined before /:id route
  */
-router.get('/preview-summary', async (req, res) => {
+router.get('/preview-summary', requireAuth, async (req, res) => {
     try {
         const { inquirySummary } = require('../services');
         console.log('👁️ Preview inquiry summary requested');
@@ -103,7 +104,7 @@ router.get('/preview-summary', async (req, res) => {
  * Manually trigger the daily summary email (for testing)
  * MUST be defined before /:id route
  */
-router.post('/send-summary', async (req, res) => {
+router.post('/send-summary', requireAuth, async (req, res) => {
     try {
         const { inquirySummary } = require('../services');
         console.log('📧 Manual inquiry summary requested');
@@ -123,7 +124,7 @@ router.post('/send-summary', async (req, res) => {
  * GET /api/inquiries/:id
  * Get a specific inquiry by ID
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', requireAuth, async (req, res) => {
     try {
         const inquiry = await inquiryRepository.findById(req.params.id);
         
@@ -142,7 +143,7 @@ router.get('/:id', async (req, res) => {
  * PATCH /api/inquiries/:id
  * Update inquiry status/notes
  */
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', requireAuth, async (req, res) => {
     try {
         const { status, notes } = req.body;
         

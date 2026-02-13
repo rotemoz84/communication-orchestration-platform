@@ -3,17 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Admin – Login</title>
+  <title>Admin</title>
   <style>
     :root {
       --bg: #0f1419;
       --surface: #1a2332;
+      --surface2: #21262d;
       --border: #2d3a4f;
       --text: #e6edf3;
       --muted: #8b949e;
       --accent: #58a6ff;
       --accent-hover: #79b8ff;
       --error: #f85149;
+      --success: #3fb950;
     }
     * { box-sizing: border-box; }
     body {
@@ -22,34 +24,25 @@
       font-family: system-ui, -apple-system, sans-serif;
       background: var(--bg);
       color: var(--text);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 1rem;
+      padding: 0;
     }
     .card {
-      width: 100%;
       max-width: 360px;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 2rem;
     }
-    h1 {
-      margin: 0 0 1.5rem;
-      font-size: 1.25rem;
-      font-weight: 600;
+    .layout {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem;
     }
-    .form-group {
-      margin-bottom: 1rem;
-    }
-    label {
-      display: block;
-      margin-bottom: 0.35rem;
-      font-size: 0.875rem;
-      color: var(--muted);
-    }
-    input {
+    h1 { margin: 0 0 1rem; font-size: 1.25rem; font-weight: 600; }
+    h2 { margin: 0 0 1rem; font-size: 1.1rem; font-weight: 600; }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; margin-bottom: 0.35rem; font-size: 0.875rem; color: var(--muted); }
+    input, select, textarea {
       width: 100%;
       padding: 0.6rem 0.75rem;
       font-size: 1rem;
@@ -58,7 +51,8 @@
       border-radius: 8px;
       color: var(--text);
     }
-    input:focus {
+    textarea { min-height: 80px; resize: vertical; }
+    input:focus, select:focus, textarea:focus {
       outline: none;
       border-color: var(--accent);
     }
@@ -73,10 +67,8 @@
     }
     .error.visible { display: block; }
     button {
-      width: 100%;
-      margin-top: 0.5rem;
-      padding: 0.7rem 1rem;
-      font-size: 1rem;
+      padding: 0.6rem 1rem;
+      font-size: 0.9375rem;
       font-weight: 500;
       color: var(--bg);
       background: var(--accent);
@@ -86,13 +78,81 @@
     }
     button:hover { background: var(--accent-hover); }
     button:disabled { opacity: 0.6; cursor: not-allowed; }
+    button.secondary {
+      background: var(--surface2);
+      color: var(--text);
+    }
+    button.secondary:hover { background: var(--border); }
     .loading { color: var(--muted); text-align: center; padding: 2rem; }
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .nav a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .nav a:hover { text-decoration: underline; }
+    .filters {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .filters .form-group { margin-bottom: 0; }
+    .filters label { margin-bottom: 0.25rem; }
+    .filters input, .filters select { min-width: 120px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    th, td {
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th { color: var(--muted); font-weight: 500; }
+    tr:hover { background: rgba(255,255,255,0.02); }
+    .cell-id { font-family: monospace; }
+    .cell-message { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pagination {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 1rem;
+    }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 400px;
+    }
+    .modal-actions { margin-top: 1rem; display: flex; gap: 0.5rem; }
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
   <div id="app">
     <div id="loading" class="loading">Checking session…</div>
-    <div id="login-card" class="card" style="display: none;">
+
+    <div id="login-card" class="card hidden" style="margin: 2rem auto;">
       <h1>Admin login</h1>
       <div id="error" class="error" role="alert"></div>
       <form id="form">
@@ -107,21 +167,114 @@
         <button type="submit" id="submit">Sign in</button>
       </form>
     </div>
-    <div id="dashboard" class="card" style="display: none;">
+
+    <div id="dashboard" class="layout hidden">
+      <div class="nav">
+        <a href="#" id="nav-dashboard">Dashboard</a>
+        <a href="#inquiries" id="nav-inquiries">Inquiries</a>
+        <button type="button" id="logout" class="secondary">Sign out</button>
+      </div>
       <h1>Admin</h1>
-      <p style="color: var(--muted);">You are logged in. Inquiries table will be added in the next step.</p>
-      <button type="button" id="logout" style="width: auto; margin-top: 1rem;">Sign out</button>
+      <p style="color: var(--muted);">Manage inquiries and send daily summary from the Inquiries page.</p>
+    </div>
+
+    <div id="inquiries-page" class="layout hidden">
+      <div class="nav">
+        <a href="#" id="nav-dashboard2">Dashboard</a>
+        <a href="#inquiries">Inquiries</a>
+        <button type="button" id="logout2" class="secondary">Sign out</button>
+      </div>
+      <h1>Inquiries</h1>
+      <div class="filters">
+        <div class="form-group">
+          <label for="filter-status">Status</label>
+          <select id="filter-status">
+            <option value="">All</option>
+            <option value="new">new</option>
+            <option value="contacted">contacted</option>
+            <option value="scheduled">scheduled</option>
+            <option value="closed">closed</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="filter-source">Source</label>
+          <select id="filter-source">
+            <option value="">All</option>
+            <option value="website">website</option>
+            <option value="whatsapp_bot">whatsapp_bot</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="filter-start">From date</label>
+          <input type="date" id="filter-start">
+        </div>
+        <div class="form-group">
+          <label for="filter-end">To date</label>
+          <input type="date" id="filter-end">
+        </div>
+        <button type="button" id="filter-apply">Apply</button>
+      </div>
+      <div id="inquiries-loading" class="loading hidden">Loading…</div>
+      <div id="inquiries-table-wrap">
+        <table id="inquiries-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Phone</th>
+              <th>Email</th>
+              <th>Service</th>
+              <th>Message</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="inquiries-tbody"></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="pagination"></div>
     </div>
   </div>
+
+  <div id="edit-modal" class="overlay hidden">
+    <div class="modal">
+      <h2>Edit inquiry</h2>
+      <input type="hidden" id="edit-inquiry-id">
+      <div class="form-group">
+        <label for="edit-status">Status</label>
+        <select id="edit-status">
+          <option value="new">new</option>
+          <option value="contacted">contacted</option>
+          <option value="scheduled">scheduled</option>
+          <option value="closed">closed</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="edit-notes">Notes</label>
+        <textarea id="edit-notes"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="edit-save">Save</button>
+        <button type="button" id="edit-cancel" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     (function () {
       var path = window.location.pathname.replace(/\/admin.*$/, '') || '';
       var apiBase = path + '/api';
+      var PAGE_SIZE = 10;
+      var currentPage = 1;
+      var currentFilters = {};
 
-      function show(el) { el.style.display = ''; }
-      function hide(el) { el.style.display = 'none'; }
+      function getEl(id) { return document.getElementById(id); }
+      function show(el) { if (el) el.classList.remove('hidden'); }
+      function hide(el) { if (el) el.classList.add('hidden'); }
       function showError(msg) {
-        var el = document.getElementById('error');
+        var el = getEl('error');
+        if (!el) return;
         el.textContent = msg || '';
         el.classList.toggle('visible', !!msg);
       }
@@ -134,35 +287,173 @@
           });
       }
 
-      function goToDashboard() {
-        hide(document.getElementById('loading'));
-        hide(document.getElementById('login-card'));
-        show(document.getElementById('dashboard'));
+      function showView(viewId) {
+        ['loading', 'login-card', 'dashboard', 'inquiries-page'].forEach(function (id) {
+          var el = getEl(id);
+          if (el) el.classList.add('hidden');
+        });
+        var el = getEl(viewId);
+        if (el) el.classList.remove('hidden');
+      }
+
+      function onLoggedIn() {
+        showView('dashboard');
+        if (window.location.hash === '#inquiries') showInquiriesPage();
       }
 
       function showLogin() {
-        hide(document.getElementById('loading'));
-        hide(document.getElementById('dashboard'));
-        show(document.getElementById('login-card'));
+        showView('login-card');
       }
 
-      // On load: check session
+      function showInquiriesPage() {
+        showView('inquiries-page');
+        loadInquiries();
+      }
+
+      function applyHash() {
+        if (window.location.hash === '#inquiries') {
+          showInquiriesPage();
+        } else {
+          showView('dashboard');
+        }
+      }
+
+      // ——— Inquiries ———
+      function getFilters() {
+        return {
+          status: getEl('filter-status') && getEl('filter-status').value || '',
+          source: getEl('filter-source') && getEl('filter-source').value || '',
+          startDate: getEl('filter-start') && getEl('filter-start').value || '',
+          endDate: getEl('filter-end') && getEl('filter-end').value || ''
+        };
+      }
+
+      function loadInquiries() {
+        var wrap = getEl('inquiries-table-wrap');
+        var loadingEl = getEl('inquiries-loading');
+        var tbody = getEl('inquiries-tbody');
+        var paginationEl = getEl('pagination');
+        if (!tbody) return;
+
+        show(loadingEl);
+        if (wrap) hide(wrap);
+
+        var f = getFilters();
+        var params = new URLSearchParams();
+        params.set('limit', String(PAGE_SIZE));
+        params.set('offset', String((currentPage - 1) * PAGE_SIZE));
+        if (f.status) params.set('status', f.status);
+        if (f.source) params.set('source', f.source);
+        if (f.startDate) params.set('startDate', f.startDate);
+        if (f.endDate) params.set('endDate', f.endDate);
+
+        fetch(apiBase + '/inquiries?' + params.toString(), { credentials: 'include' })
+          .then(function (r) {
+            if (r.status === 401) { showLogin(); return null; }
+            return r.json();
+          })
+          .then(function (data) {
+            hide(loadingEl);
+            if (wrap) show(wrap);
+            if (!data || !Array.isArray(data)) return;
+
+            var dateOpt = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jerusalem' };
+            tbody.innerHTML = data.map(function (row) {
+              var dateStr = row.timestamp ? new Date(row.timestamp).toLocaleString('he-IL', dateOpt) : '—';
+              var msg = (row.message || '—').replace(/</g, '&lt;').substring(0, 80);
+              if ((row.message || '').length > 80) msg += '…';
+              return '<tr>' +
+                '<td>' + dateStr + '</td>' +
+                '<td class="cell-id">' + (row.inquiryId || '—') + '</td>' +
+                '<td>' + (row.name || '—') + '</td>' +
+                '<td>' + (row.phone || '—') + '</td>' +
+                '<td>' + (row.email || '—') + '</td>' +
+                '<td>' + (row.service || '—') + '</td>' +
+                '<td class="cell-message" title="' + (row.message || '').replace(/"/g, '&quot;') + '">' + msg + '</td>' +
+                '<td>' + (row.status || '—') + '</td>' +
+                '<td><button type="button" class="secondary btn-edit" data-id="' + (row.inquiryId || '') + '">Edit</button></td>' +
+                '</tr>';
+            }).join('');
+
+            // Pagination: simple prev/next (we don't have total count; show next if we got full page)
+            var hasMore = data.length === PAGE_SIZE;
+            paginationEl.innerHTML = 
+              '<span>Page ' + currentPage + '</span>' +
+              '<button type="button" id="page-prev"' + (currentPage <= 1 ? ' disabled' : '') + '>Previous</button>' +
+              '<button type="button" id="page-next"' + (!hasMore ? ' disabled' : '') + '>Next</button>';
+            getEl('page-prev').onclick = function () { if (currentPage > 1) { currentPage--; loadInquiries(); } };
+            getEl('page-next').onclick = function () { if (hasMore) { currentPage++; loadInquiries(); } };
+
+            tbody.querySelectorAll('.btn-edit').forEach(function (btn) {
+              btn.onclick = function () { openEditModal(btn.getAttribute('data-id')); };
+            });
+          })
+          .catch(function () {
+            hide(loadingEl);
+            if (wrap) show(wrap);
+            tbody.innerHTML = '<tr><td colspan="9">Failed to load inquiries.</td></tr>';
+          });
+      }
+
+      function openEditModal(inquiryId) {
+        fetch(apiBase + '/inquiries/' + encodeURIComponent(inquiryId), { credentials: 'include' })
+          .then(function (r) {
+            if (r.status === 401) { showLogin(); return null; }
+            return r.json();
+          })
+          .then(function (inquiry) {
+            if (!inquiry) return;
+            getEl('edit-inquiry-id').value = inquiry.inquiryId;
+            getEl('edit-status').value = inquiry.status || 'new';
+            getEl('edit-notes').value = inquiry.notes || '';
+            show(getEl('edit-modal'));
+          });
+      }
+
+      function saveEdit() {
+        var id = getEl('edit-inquiry-id').value;
+        var status = getEl('edit-status').value;
+        var notes = getEl('edit-notes').value;
+        fetch(apiBase + '/inquiries/' + encodeURIComponent(id), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ status: status, notes: notes })
+        })
+          .then(function (r) {
+            if (r.status === 401) { showLogin(); return; }
+            return r.json();
+          })
+          .then(function () {
+            hide(getEl('edit-modal'));
+            loadInquiries();
+          });
+      }
+
+      // ——— Init ———
       checkSession()
         .then(function (data) {
-          if (data && data.user) goToDashboard();
-          else showLogin();
+          if (data && data.user) {
+            onLoggedIn();
+            applyHash();
+          } else {
+            showLogin();
+          }
         })
         .catch(function () { showLogin(); });
 
-      // Login form
-      document.getElementById('form').addEventListener('submit', function (e) {
+      window.addEventListener('hashchange', function () {
+        if (getEl('login-card') && !getEl('login-card').classList.contains('hidden')) return;
+        applyHash();
+      });
+
+      getEl('form').addEventListener('submit', function (e) {
         e.preventDefault();
-        var email = document.getElementById('email').value.trim();
-        var password = document.getElementById('password').value;
-        var btn = document.getElementById('submit');
+        var email = getEl('email').value.trim();
+        var password = getEl('password').value;
+        var btn = getEl('submit');
         showError('');
         btn.disabled = true;
-
         fetch(apiBase + '/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -173,25 +464,33 @@
           .then(function (_ref) {
             var ok = _ref.ok, data = _ref.data;
             if (ok && data.success) {
-              goToDashboard();
+              onLoggedIn();
+              applyHash();
             } else {
               showError(data.error || 'Login failed');
               btn.disabled = false;
             }
           })
-          .catch(function (err) {
+          .catch(function () {
             showError('Network error. Please try again.');
             btn.disabled = false;
           });
       });
 
-      // Logout
-      document.getElementById('logout').addEventListener('click', function () {
+      getEl('logout').addEventListener('click', doLogout);
+      if (getEl('logout2')) getEl('logout2').addEventListener('click', doLogout);
+      function doLogout() {
         fetch(apiBase + '/auth/logout', { method: 'POST', credentials: 'include' })
-          .then(function () {
-            window.location.reload();
-          });
-      });
+          .then(function () { window.location.reload(); });
+      }
+
+      getEl('nav-dashboard').addEventListener('click', function (e) { e.preventDefault(); window.location.hash = ''; applyHash(); });
+      if (getEl('nav-dashboard2')) getEl('nav-dashboard2').addEventListener('click', function (e) { e.preventDefault(); window.location.hash = ''; applyHash(); });
+      getEl('nav-inquiries').addEventListener('click', function (e) { e.preventDefault(); window.location.hash = 'inquiries'; applyHash(); });
+
+      getEl('filter-apply').addEventListener('click', function () { currentPage = 1; loadInquiries(); });
+      getEl('edit-save').addEventListener('click', saveEdit);
+      getEl('edit-cancel').addEventListener('click', function () { hide(getEl('edit-modal')); });
     })();
   </script>
 </body>
