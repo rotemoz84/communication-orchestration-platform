@@ -11,6 +11,7 @@ const adminUserRepository = require('../dal/repositories/adminUserRepository');
 /**
  * POST /api/auth/login
  * Body: { email, password }
+ * Do not log req.body or password; payload is visible in DevTools but sent over HTTPS only.
  */
 router.post('/login', async (req, res) => {
     try {
@@ -39,7 +40,7 @@ router.post('/login', async (req, res) => {
                 console.error('Session save error on login:', err.message);
                 return res.status(500).json({ error: 'Login failed' });
             }
-            if (process.env.NODE_ENV === 'production' || process.env.node_env === 'production') {
+            if (process.env.NODE_ENV === 'production') {
                 console.log('Auth: login success userId=' + user.id);
             }
             res.json({
@@ -72,11 +73,12 @@ router.post('/logout', (req, res) => {
 
 /**
  * GET /api/auth/me
- * Current user (for frontend to check login state). 401 if not logged in.
+ * Current user (for frontend to check login state). 200 + { user: null } when not logged in
+ * (avoids browser console "Failed to load resource" for 401).
  */
 router.get('/me', (req, res) => {
     if (!req.session || !req.session.userId) {
-        return res.status(401).json({ error: 'Not authenticated', code: 'LOGIN_REQUIRED' });
+        return res.status(200).json({ user: null });
     }
     res.json({
         user: {

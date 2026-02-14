@@ -59,6 +59,13 @@ app.use(express.urlencoded({ extended: true })); // For Twilio webhooks
 const BASE_PATH = process.env.BASE_PATH || '';
 
 // ============================================
+// Favicon (avoid 404 in browser console)
+// ============================================
+app.get(BASE_PATH + '/favicon.ico', (req, res) => {
+    res.status(204).end();
+});
+
+// ============================================
 // Health & Status Endpoints
 // ============================================
 
@@ -143,7 +150,7 @@ async function startServer() {
 
         // Session (requires DB pool) + Auth routes - only when DB is available
         if (dbConnected) {
-            const sessionSecret = process.env.SESSION_SECRET || process.env.session_Secret || process.env.session_secret;
+            const sessionSecret = process.env.SESSION_SECRET;
             if (!sessionSecret || String(sessionSecret).trim() === '') {
                 console.error('❌ SESSION_SECRET is required. Set SESSION_SECRET in .env (e.g. a long random string).');
                 process.exit(1);
