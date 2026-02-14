@@ -3,11 +3,11 @@
  * Centralizes all environment configuration
  */
 
-// Env vars are case-sensitive; accept common variants for production
+// Env vars are case-sensitive; 
 const config = {
     // Server
     port: process.env.PORT || 3003,
-    nodeEnv: process.env.NODE_ENV || process.env.node_env || 'development',
+    nodeEnv: process.env.NODE_ENV || 'development',
     baseUrl: process.env.BASE_URL || 'http://localhost:3003',
     
     // Timezone
