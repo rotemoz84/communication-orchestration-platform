@@ -33,13 +33,23 @@ router.post('/login', async (req, res) => {
         req.session.email = user.email;
         req.session.displayName = user.display_name || user.email;
 
-        res.json({
-            success: true,
-            user: {
-                id: user.id,
-                email: user.email,
-                displayName: req.session.displayName
+        // Save session to store before sending response so the next request sees it (avoids race)
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session save error on login:', err.message);
+                return res.status(500).json({ error: 'Login failed' });
             }
+            if (process.env.NODE_ENV === 'production' || process.env.node_env === 'production') {
+                console.log('Auth: login success userId=' + user.id);
+            }
+            res.json({
+                success: true,
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    displayName: req.session.displayName
+                }
+            });
         });
     } catch (error) {
         console.error('Login error:', error.message);

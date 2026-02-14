@@ -30,6 +30,13 @@ const {
 
 const app = express();
 
+// Trust first proxy (required in production when behind nginx/Apache/cPanel)
+// so req.secure and cookies work correctly over HTTPS
+// Env is case-sensitive: use TRUST_PROXY=1
+if (config.nodeEnv === 'production' || process.env.TRUST_PROXY === '1') {
+    app.set('trust proxy', 1);
+}
+
 // Middleware - CORS configuration
 const corsOptions = {
     origin: [
@@ -136,12 +143,17 @@ async function startServer() {
 
         // Session (requires DB pool) + Auth routes - only when DB is available
         if (dbConnected) {
+            const sessionSecret = process.env.SESSION_SECRET || process.env.session_Secret || process.env.session_secret;
+            if (!sessionSecret || String(sessionSecret).trim() === '') {
+                console.error('❌ SESSION_SECRET is required. Set SESSION_SECRET in .env (e.g. a long random string).');
+                process.exit(1);
+            }
             const session = require('express-session');
             const PGStore = require('connect-pg-simple')(session);
             const pool = getPool();
             app.use(session({
                 store: new PGStore({ pool, tableName: 'session' }),
-                secret: process.env.SESSION_SECRET || 'change-me-in-production',
+                secret: sessionSecret,
                 resave: false,
                 saveUninitialized: false,
                 rolling: true, // reset expiry on every request → logout after 1h of *inactivity*
@@ -149,7 +161,8 @@ async function startServer() {
                     httpOnly: true,
                     secure: config.nodeEnv === 'production',
                     maxAge: Number(config.session.maxAgeMs) || 60 * 60 * 1000, // 1h if missing/invalid
-                    sameSite: 'lax'
+                    sameSite: 'lax',
+                    path: BASE_PATH || '/'
                 }
             }));
             app.use(BASE_PATH + '/api/auth', authRoutes);
