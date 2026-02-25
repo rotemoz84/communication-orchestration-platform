@@ -27,18 +27,20 @@ async function create(callData) {
             officeStatus = 'unknown', 
             outcome = 'incoming', 
             twilioCallSid = null,
-            notes = null
+            notes = null,
+            direction = 'inbound',
+            calleeNumber = null
         } = callData;
 
         const sql = `
-            INSERT INTO calls (call_id, caller_number, office_status, outcome, twilio_call_sid, notes)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO calls (call_id, caller_number, office_status, outcome, twilio_call_sid, notes, direction, callee_number)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING *
         `;
 
-        const result = await query(sql, [callId, callerNumber, officeStatus, outcome, twilioCallSid, notes]);
+        const result = await query(sql, [callId, callerNumber, officeStatus, outcome, twilioCallSid, notes, direction, calleeNumber]);
 
-        console.log(`📊 Call tracked: ${callId} from ${callerNumber} - ${outcome}`);
+        console.log(`📊 Call tracked: ${callId} from ${callerNumber} (${direction}) - ${outcome}`);
         return mapRowToCall(result[0]);
     } catch (error) {
         console.error('Error saving call record:', error.message);
@@ -242,6 +244,36 @@ async function findById(callId) {
 }
 
 /**
+ * Create an outgoing call record
+ * @param {Object} callData - Outgoing call information
+ * @returns {Object} - Created call record
+ */
+async function createOutgoing(callData) {
+    try {
+        const { 
+            calleeNumber, 
+            callerNumber = config.repPhoneNumber,
+            outcome = 'outgoing_initiated', 
+            twilioCallSid = null,
+            notes = null
+        } = callData;
+
+        return await create({
+            callerNumber,
+            calleeNumber,
+            officeStatus: 'outgoing',
+            outcome,
+            twilioCallSid,
+            notes,
+            direction: 'outbound'
+        });
+    } catch (error) {
+        console.error('Error creating outgoing call record:', error.message);
+        return null;
+    }
+}
+
+/**
  * Get aggregated statistics for a date range
  * @param {string} startDate - Start date (YYYY-MM-DD)
  * @param {string} endDate - End date (YYYY-MM-DD)
@@ -256,6 +288,8 @@ async function getStats(startDate, endDate) {
                 SUM(CASE WHEN outcome LIKE '%whatsapp%' THEN 1 ELSE 0 END)::int as whatsapp_sent,
                 SUM(CASE WHEN office_status = 'open' THEN 1 ELSE 0 END)::int as during_open,
                 SUM(CASE WHEN office_status = 'closed' THEN 1 ELSE 0 END)::int as during_closed,
+                SUM(CASE WHEN direction = 'inbound' THEN 1 ELSE 0 END)::int as inbound_calls,
+                SUM(CASE WHEN direction = 'outbound' THEN 1 ELSE 0 END)::int as outbound_calls,
                 ROUND(AVG(CASE WHEN duration > 0 THEN duration ELSE NULL END)::numeric, 2) as avg_duration
             FROM calls
             WHERE timestamp >= $1 AND timestamp <= $2
@@ -274,6 +308,58 @@ async function getStats(startDate, endDate) {
 }
 
 /**
+ * Get recent calls with filtering options
+ */
+async function getRecentCalls(limit = 50, filters = {}) {
+    try {
+        const { direction, outcome, startDate, endDate } = filters;
+        
+        let whereClause = 'WHERE 1=1';
+        const params = [];
+        let paramIndex = 1;
+        
+        if (direction) {
+            whereClause += ` AND direction = $${paramIndex}`;
+            params.push(direction);
+            paramIndex++;
+        }
+        
+        if (outcome) {
+            whereClause += ` AND outcome = $${paramIndex}`;
+            params.push(outcome);
+            paramIndex++;
+        }
+        
+        if (startDate) {
+            whereClause += ` AND timestamp >= $${paramIndex}`;
+            params.push(startDate + ' 00:00:00');
+            paramIndex++;
+        }
+        
+        if (endDate) {
+            whereClause += ` AND timestamp <= $${paramIndex}`;
+            params.push(endDate + ' 23:59:59');
+            paramIndex++;
+        }
+        
+        const sql = `
+            SELECT * FROM calls 
+            ${whereClause}
+            ORDER BY timestamp DESC 
+            LIMIT $${paramIndex}
+        `;
+        
+        params.push(limit);
+        
+        const results = await query(sql, params);
+        return results.map(mapRowToCall);
+    } catch (error) {
+        console.error('Error fetching recent calls:', error.message);
+        throw new Error('Could not fetch recent calls');
+    }
+}
+
+/**
  * Map database row to call object
  */
 function mapRowToCall(row) {
@@ -284,11 +370,13 @@ function mapRowToCall(row) {
         callId: row.call_id,
         timestamp: row.timestamp,
         callerNumber: row.caller_number,
+        calleeNumber: row.callee_number,
         officeStatus: row.office_status,
         outcome: row.outcome,
         duration: row.duration,
         twilioCallSid: row.twilio_call_sid,
         notes: row.notes,
+        direction: row.direction,
         createdAt: row.created_at,
         updatedAt: row.updated_at
     };
@@ -297,9 +385,11 @@ function mapRowToCall(row) {
 module.exports = {
     generateCallId,
     create,
+    createOutgoing,
     updateByCallerNumber,
     updateByTwilioSid,
     find,
     findById,
-    getStats
+    getStats,
+    getRecentCalls
 };

@@ -14,6 +14,9 @@ module.exports = {
     
     // WhatsApp
     sendWhatsAppMessage: whatsapp.sendWhatsAppMessage,
+    sendWhatsAppInteractive: whatsapp.sendWhatsAppInteractive,
+    sendWhatsAppLocation: whatsapp.sendWhatsAppLocation,
+    sendBulkWhatsApp: whatsapp.sendBulkWhatsApp,
     sendWhatsAppTemplate: whatsapp.sendWhatsAppTemplate,
     sendMissedCallWhatsApp: whatsapp.sendMissedCallWhatsApp,
     formatWhatsAppNumber: whatsapp.formatWhatsAppNumber,

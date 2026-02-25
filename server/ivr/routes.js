@@ -262,6 +262,65 @@ router.post('/no-answer-menu', async (req, res) => {
 });
 
 /**
+ * Handle outgoing call status
+ * POST /api/voice/outgoing-status
+ */
+router.post('/outgoing-status', async (req, res) => {
+    const twiml = new VoiceResponse();
+    const callStatus = req.body.CallStatus;
+    const to = req.body.To || 'unknown';
+    const from = req.body.From || 'unknown';
+    
+    console.log(`📞 Outgoing call status: ${callStatus} to ${to}`);
+
+    try {
+        // Update call record based on status
+        let outcome = 'outgoing_unknown';
+        
+        switch (callStatus) {
+            case 'queued':
+                outcome = 'outgoing_queued';
+                break;
+            case 'ringing':
+                outcome = 'outgoing_ringing';
+                break;
+            case 'in-progress':
+                outcome = 'outgoing_answered';
+                break;
+            case 'completed':
+                outcome = 'outgoing_completed';
+                break;
+            case 'busy':
+                outcome = 'outgoing_busy';
+                break;
+            case 'no-answer':
+                outcome = 'outgoing_no_answer';
+                break;
+            case 'failed':
+                outcome = 'outgoing_failed';
+                break;
+            case 'canceled':
+                outcome = 'outgoing_canceled';
+                break;
+        }
+
+        // Update by Twilio SID
+        const twilioCallSid = req.body.CallSid;
+        if (twilioCallSid) {
+            await callRepository.updateByTwilioSid(twilioCallSid, { outcome });
+        }
+
+        // For outgoing calls, we don't need to provide TwiML
+        // Just return success
+        res.status(200).send('OK');
+        
+    } catch (error) {
+        console.error('Error handling outgoing call status:', error.message);
+        res.status(500).send('Error');
+    }
+});
+
+/**
  * Status callback for tracking call metrics
  * POST /api/voice/status
  */
@@ -277,18 +336,160 @@ router.post('/status', (req, res) => {
 });
 
 /**
- * Get current IVR status and settings
+ * IVR Settings and Control API Routes
+ * POST /api/ivr/settings
+ */
+router.post('/settings', async (req, res) => {
+    try {
+        const { updateIvrSettings } = require('./service');
+        const newSettings = req.body;
+        
+        if (!newSettings || typeof newSettings !== 'object') {
+            return res.status(400).json({ error: 'Settings object is required' });
+        }
+        
+        const updatedSettings = updateIvrSettings(newSettings);
+        
+        res.json({
+            success: true,
+            settings: updatedSettings
+        });
+    } catch (error) {
+        console.error('Error updating IVR settings:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/ivr/settings
+ * Get current IVR settings
+ */
+router.get('/settings', async (req, res) => {
+    try {
+        const { getIvrSettings } = require('./service');
+        const settings = getIvrSettings();
+        
+        res.json({
+            success: true,
+            settings
+        });
+    } catch (error) {
+        console.error('Error getting IVR settings:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * POST /api/ivr/emergency
+ * Toggle emergency mode
+ * Body: { enabled: boolean }
+ */
+router.post('/emergency', async (req, res) => {
+    try {
+        const { toggleEmergencyMode } = require('./service');
+        const { enabled } = req.body;
+        
+        if (typeof enabled !== 'boolean') {
+            return res.status(400).json({ error: 'enabled boolean is required' });
+        }
+        
+        const emergencyMode = toggleEmergencyMode(enabled);
+        
+        res.json({
+            success: true,
+            emergencyMode
+        });
+    } catch (error) {
+        console.error('Error toggling emergency mode:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/ivr/queue
+ * Get current queue status
+ */
+router.get('/queue', async (req, res) => {
+    try {
+        const { getQueueStatus } = require('./service');
+        const queueStatus = getQueueStatus();
+        
+        res.json({
+            success: true,
+            queue: queueStatus
+        });
+    } catch (error) {
+        console.error('Error getting queue status:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * POST /api/ivr/queue/add
+ * Add caller to queue (for testing)
+ * Body: { callerNumber: string, callId: string }
+ */
+router.post('/queue/add', async (req, res) => {
+    try {
+        const { addToQueue } = require('./service');
+        const { callerNumber, callId } = req.body;
+        
+        if (!callerNumber || !callId) {
+            return res.status(400).json({ error: 'callerNumber and callId are required' });
+        }
+        
+        const result = addToQueue(callerNumber, callId);
+        
+        res.json({
+            success: result.success,
+            result
+        });
+    } catch (error) {
+        console.error('Error adding to queue:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * POST /api/ivr/queue/remove
+ * Remove caller from queue
+ * Body: { callId: string }
+ */
+router.post('/queue/remove', async (req, res) => {
+    try {
+        const { removeFromQueue } = require('./service');
+        const { callId } = req.body;
+        
+        if (!callId) {
+            return res.status(400).json({ error: 'callId is required' });
+        }
+        
+        const result = removeFromQueue(callId);
+        
+        res.json({
+            success: result.success,
+            result
+        });
+    } catch (error) {
+        console.error('Error removing from queue:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
  * GET /api/voice/status
+ * Get current IVR status and settings
  */
 router.get('/status', async (req, res) => {
     try {
+        const { isOfficeOpen, getOfficeStatus } = require('./service');
         const officeOpen = await isOfficeOpen();
+        const officeStatus = await getOfficeStatus();
         
         res.json({
             success: true,
             officeOpen,
-            repPhone: REP_PHONE,
-            messages: getAllMessages()
+            officeStatus
         });
     } catch (error) {
         res.status(500).json({

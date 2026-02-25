@@ -1,14 +1,166 @@
 /**
  * WhatsApp Routes
- * Handles incoming WhatsApp messages via Twilio webhooks
+ * Handles incoming WhatsApp messages via Twilio webhooks and outgoing messaging
  */
 
 const express = require('express');
 const router = express.Router();
 const MessagingResponse = require('twilio').twiml.MessagingResponse;
-const { handleIncomingMessage, getBotStartMessage, resetUserState, getAllBotMessages } = require('../integrations/twilio/whatsappBot');
-const { sendWhatsAppMessage } = require('../integrations/twilio/whatsapp');
+const { 
+    handleIncomingMessage, 
+    getBotStartMessage, 
+    resetUserState, 
+    getAllBotMessages 
+} = require('../integrations/twilio/whatsappBot');
+
+// Import Telnyx WhatsApp functions
+let sendWhatsAppMessage, sendWhatsAppInteractive, sendWhatsAppLocation, sendBulkWhatsApp;
+try {
+    const telnyxWhatsApp = require('../integrations/telnyx/whatsapp');
+    sendWhatsAppMessage = telnyxWhatsApp.sendWhatsAppMessage;
+    sendWhatsAppInteractive = telnyxWhatsApp.sendWhatsAppInteractive;
+    sendWhatsAppLocation = telnyxWhatsApp.sendWhatsAppLocation;
+    sendBulkWhatsApp = telnyxWhatsApp.sendBulkWhatsApp;
+} catch (error) {
+    console.log('⚠️ Telnyx WhatsApp not available, using mock mode');
+    // Fallback to Twilio for now
+    const twilioWhatsApp = require('../integrations/twilio/whatsapp');
+    sendWhatsAppMessage = twilioWhatsApp.sendWhatsAppMessage;
+    sendWhatsAppInteractive = twilioWhatsApp.sendWhatsAppInteractive;
+    sendWhatsAppLocation = twilioWhatsApp.sendWhatsAppLocation;
+    sendBulkWhatsApp = twilioWhatsApp.sendBulkWhatsApp;
+}
+
 const { saveInquiry } = require('../dal/repositories/inquiryRepository');
+const { isTelnyxConfigured, isTwilioConfigured } = require('../config');
+
+/**
+ * POST /api/whatsapp/send
+ * Send a WhatsApp message programmatically
+ * Body: { to: string, message: string, options?: object }
+ */
+router.post('/send', async (req, res) => {
+    try {
+        const { to, message, options = {} } = req.body;
+        
+        if (!to || !message) {
+            return res.status(400).json({ 
+                error: 'Phone number and message are required' 
+            });
+        }
+        
+        // Check if Telnyx is configured
+        if (!isTelnyxConfigured()) {
+            return res.status(500).json({ 
+                error: 'Telnyx not configured. Please set TELNYX_API_KEY and other Telnyx credentials' 
+            });
+        }
+        
+        const result = await sendWhatsAppMessage(to, message, options);
+        
+        res.json({
+            success: true,
+            result
+        });
+        
+    } catch (error) {
+        console.error('Error sending WhatsApp:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * POST /api/whatsapp/send-interactive
+ * Send WhatsApp message with interactive buttons
+ * Body: { to: string, message: string, buttons: Array<{id: string, title: string}> }
+ */
+router.post('/send-interactive', async (req, res) => {
+    try {
+        const { to, message, buttons = [] } = req.body;
+        
+        if (!to || !message || buttons.length === 0) {
+            return res.status(400).json({ 
+                error: 'Phone number, message, and buttons are required' 
+            });
+        }
+        
+        const result = await sendWhatsAppInteractive(to, message, buttons);
+        
+        res.json({
+            success: true,
+            result
+        });
+        
+    } catch (error) {
+        console.error('Error sending interactive WhatsApp:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * POST /api/whatsapp/send-location
+ * Send WhatsApp location
+ * Body: { to: string, location: {lat: number, lon: number, name?: string, address?: string} }
+ */
+router.post('/send-location', async (req, res) => {
+    try {
+        const { to, location } = req.body;
+        
+        if (!to || !location || !location.lat || !location.lon) {
+            return res.status(400).json({ 
+                error: 'Phone number and location (lat, lon) are required' 
+            });
+        }
+        
+        const result = await sendWhatsAppLocation(to, location);
+        
+        res.json({
+            success: true,
+            result
+        });
+        
+    } catch (error) {
+        console.error('Error sending WhatsApp location:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * POST /api/whatsapp/send-bulk
+ * Send bulk WhatsApp messages
+ * Body: { recipients: Array<{phone: string, message: string, options?: object}>, options?: {delay?: number, batchSize?: number} }
+ */
+router.post('/send-bulk', async (req, res) => {
+    try {
+        const { recipients = [], options = {} } = req.body;
+        
+        if (!Array.isArray(recipients) || recipients.length === 0) {
+            return res.status(400).json({ 
+                error: 'Recipients array is required and cannot be empty' 
+            });
+        }
+        
+        // Validate each recipient
+        for (const recipient of recipients) {
+            if (!recipient.phone || !recipient.message) {
+                return res.status(400).json({ 
+                    error: 'Each recipient must have phone and message' 
+                });
+            }
+        }
+        
+        const result = await sendBulkWhatsApp(recipients, options);
+        
+        res.json({
+            success: true,
+            result
+        });
+        
+    } catch (error) {
+        console.error('Error sending bulk WhatsApp:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 /**
  * Incoming WhatsApp message webhook
@@ -30,7 +182,7 @@ router.post('/incoming', async (req, res) => {
         // Use button payload if available, otherwise use message body
         const messageContent = buttonPayload || body;
         
-        console.log(`📱 WhatsApp incoming from ${phoneNumber}: ${messageContent}`);
+        console.log(` WhatsApp incoming from ${phoneNumber}: ${messageContent}`);
 
         // Handle the message through the bot (pass saveInquiry function)
         const response = await handleIncomingMessage(phoneNumber, messageContent, profileName, saveInquiry);
@@ -50,7 +202,7 @@ router.post('/incoming', async (req, res) => {
 
     } catch (error) {
         console.error('Error handling WhatsApp message:', error.message);
-        twiml.message('אירעה שגיאה. אנא נסו שוב.');
+        twiml.message('מצטערים, אירעה שגיאה. אנא נסה שוב מאוחר יותר.');
     }
 
     res.type('text/xml');

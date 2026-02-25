@@ -18,7 +18,13 @@ const { initDatabase, getPool } = require('./dal');
 const authRoutes = require('./routes/auth');
 const bookingRoutes = require('./routes/booking');
 const whatsappRoutes = require('./routes/whatsapp');
-const callRoutes = require('./routes/calls');
+let callRoutes;
+try {
+    callRoutes = require('./routes/calls');
+} catch (error) {
+    console.log('⚠️ Call routes not available:', error.message);
+    callRoutes = express.Router();
+}
 const inquiryRoutes = require('./routes/inquiries');
 const ivrRoutes = require('./ivr/routes');
 
@@ -86,6 +92,9 @@ app.use(BASE_PATH + '/api/booking', bookingRoutes);
 
 // Voice/IVR routes (Twilio webhooks)
 app.use(BASE_PATH + '/api/voice', ivrRoutes);
+
+// IVR control routes
+app.use(BASE_PATH + '/api/ivr', ivrRoutes);
 
 // WhatsApp bot routes (Twilio webhooks)
 app.use(BASE_PATH + '/api/whatsapp', whatsappRoutes);

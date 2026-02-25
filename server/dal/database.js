@@ -81,6 +81,8 @@ async function createTables() {
                 duration INTEGER DEFAULT NULL,
                 twilio_call_sid VARCHAR(50) DEFAULT NULL,
                 notes TEXT DEFAULT NULL,
+                direction VARCHAR(10) DEFAULT 'inbound',
+                callee_number VARCHAR(20) DEFAULT NULL,
                 created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
             )
@@ -92,6 +94,8 @@ async function createTables() {
             CREATE INDEX IF NOT EXISTS idx_calls_caller_number ON calls(caller_number);
             CREATE INDEX IF NOT EXISTS idx_calls_outcome ON calls(outcome);
             CREATE INDEX IF NOT EXISTS idx_calls_office_status ON calls(office_status);
+            CREATE INDEX IF NOT EXISTS idx_calls_direction ON calls(direction);
+            CREATE INDEX IF NOT EXISTS idx_calls_callee_number ON calls(callee_number);
         `);
 
         // Create trigger function for updating updated_at

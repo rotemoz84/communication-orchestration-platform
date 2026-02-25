@@ -32,7 +32,17 @@ const config = {
         calendarId: process.env.GOOGLE_CALENDAR_ID
     },
     
-    // Twilio
+    // Telnyx (replacing Twilio)
+    telnyx: {
+        apiKey: process.env.TELNYX_API_KEY,
+        phoneNumber: process.env.TELNYX_PHONE_NUMBER,
+        whatsappNumber: process.env.TELNYX_WHATSAPP_NUMBER,
+        connectionId: process.env.TELNYX_CONNECTION_ID,
+        messagingProfileId: process.env.TELNYX_MESSAGING_PROFILE_ID,
+        webhookUrl: process.env.TELNYX_WEBHOOK_URL
+    },
+    
+    // Legacy Twilio (keep for backward compatibility during migration)
     twilio: {
         accountSid: process.env.TWILIO_ACCOUNT_SID,
         authToken: process.env.TWILIO_AUTH_TOKEN,
@@ -42,6 +52,25 @@ const config = {
     
     // Business
     repPhoneNumber: process.env.REP_PHONE_NUMBER || '+972500000000',
+    
+    // IVR Settings
+    ivr: {
+        callRecording: process.env.IVR_CALL_RECORDING === 'true',
+        emergencyMode: process.env.IVR_EMERGENCY_MODE === 'true',
+        queueEnabled: process.env.IVR_QUEUE_ENABLED === 'true',
+        maxQueueSize: parseInt(process.env.IVR_MAX_QUEUE_SIZE) || 10,
+        customGreeting: process.env.IVR_CUSTOM_GREETING,
+        whatsappFallback: process.env.IVR_WHATSAPP_FALLBACK !== 'false',
+        callForwarding: process.env.IVR_CALL_FORWARDING !== 'false'
+    },
+    
+    // WhatsApp Settings
+    whatsapp: {
+        bulkDelay: parseInt(process.env.WHATSAPP_BULK_DELAY) || 1000,
+        bulkBatchSize: parseInt(process.env.WHATSAPP_BULK_BATCH_SIZE) || 10,
+        interactiveEnabled: process.env.WHATSAPP_INTERACTIVE_ENABLED === 'true',
+        locationEnabled: process.env.WHATSAPP_LOCATION_ENABLED === 'true'
+    },
 
     // Admin session (cookie lifetime)
     session: {
@@ -70,7 +99,14 @@ function validateConfig() {
 }
 
 /**
- * Check if Twilio is configured
+ * Check if Telnyx is configured
+ */
+function isTelnyxConfigured() {
+    return !!(config.telnyx.apiKey && config.telnyx.phoneNumber);
+}
+
+/**
+ * Check if Twilio is configured (legacy)
  */
 function isTwilioConfigured() {
     return !!(config.twilio.accountSid && config.twilio.authToken);
@@ -86,6 +122,7 @@ function isDatabaseConfigured() {
 module.exports = {
     config,
     validateConfig,
+    isTelnyxConfigured,
     isTwilioConfigured,
     isDatabaseConfigured
 };
