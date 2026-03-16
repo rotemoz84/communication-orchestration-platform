@@ -69,11 +69,12 @@ router.post('/login', async (req, res) => {
  */
 router.post('/cron-login', async (req, res) => {
     try {
-        const secret = req.get('X-Cron-Secret') || req.body?.cronSecret;
-        if (!secret || !config.cron?.secret || secret !== config.cron.secret) {
+        const secret = req.get('X-Cron-Secret') || (req.body && req.body.cronSecret);
+        const cronSecret = config.cron && config.cron.secret;
+        const adminEmail = config.cron && config.cron.adminEmail;
+        if (!secret || !cronSecret || secret !== cronSecret) {
             return res.status(401).json({ error: 'Invalid cron secret' });
         }
-        const adminEmail = config.cron.adminEmail;
         if (!adminEmail) {
             return res.status(500).json({ error: 'CRON_ADMIN_EMAIL not configured' });
         }
