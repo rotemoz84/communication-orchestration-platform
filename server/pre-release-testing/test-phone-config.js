@@ -3,7 +3,7 @@
  * Verifies your personal phone number is correctly configured
  */
 
-const { config } = require('./config');
+const { config } = require('../config');
 
 function testPhoneConfiguration() {
     console.log('📱 Testing Phone Number Configuration...\n');
