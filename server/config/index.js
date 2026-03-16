@@ -43,6 +43,12 @@ const config = {
     // Business
     repPhoneNumber: process.env.REP_PHONE_NUMBER || '+972500000000',
 
+    // Cron job auth (for triggering send-summary etc. without browser)
+    cron: {
+        secret: process.env.CRON_SECRET,
+        adminEmail: process.env.CRON_ADMIN_EMAIL
+    },
+
     // Admin session (cookie lifetime)
     session: {
         // Session duration in ms. Default 1 hour. Use SESSION_MAX_AGE_HOURS (e.g. 0.5, 1, 2) or SESSION_MAX_AGE_MS.

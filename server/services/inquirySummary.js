@@ -2,8 +2,9 @@
  * Inquiry Summary Service
  * Sends daily email summaries of inquiries
  * 
- * Triggered via cPanel cron job (more reliable on shared hosting)
- * Endpoint: POST /api/inquiries/send-summary
+ * Triggered via cPanel cron job (more reliable on shared hosting).
+ * Cron flow: POST /api/auth/cron-login (X-Cron-Secret) to get a session cookie, then
+ * POST /api/inquiries/send-summary with that cookie.
  * 
  * Reliability: Tracks last successful send to ensure no inquiries are missed
  */
