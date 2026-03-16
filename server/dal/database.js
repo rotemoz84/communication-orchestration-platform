@@ -88,6 +88,21 @@ async function createTables() {
             )
         `);
 
+        // Migration: add direction and callee_number if table existed from older schema
+        await pool.query(`
+            DO $$
+            BEGIN
+                IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'calls') THEN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'calls' AND column_name = 'direction') THEN
+                        ALTER TABLE calls ADD COLUMN direction VARCHAR(10) DEFAULT 'inbound';
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'calls' AND column_name = 'callee_number') THEN
+                        ALTER TABLE calls ADD COLUMN callee_number VARCHAR(20) DEFAULT NULL;
+                    END IF;
+                END IF;
+            END $$;
+        `);
+
         // Create indexes for better query performance
         await pool.query(`
             CREATE INDEX IF NOT EXISTS idx_calls_timestamp ON calls(timestamp);
@@ -115,7 +130,7 @@ async function createTables() {
             CREATE TRIGGER update_calls_updated_at
                 BEFORE UPDATE ON calls
                 FOR EACH ROW
-                EXECUTE FUNCTION update_updated_at_column();
+                EXECUTE PROCEDURE update_updated_at_column();
         `);
 
         // Inquiries table for website contact form submissions
@@ -151,7 +166,7 @@ async function createTables() {
             CREATE TRIGGER update_inquiries_updated_at
                 BEFORE UPDATE ON inquiries
                 FOR EACH ROW
-                EXECUTE FUNCTION update_updated_at_column();
+                EXECUTE PROCEDURE update_updated_at_column();
         `);
 
         // Admin users (for admin site login)
@@ -196,7 +211,7 @@ async function createTables() {
             CREATE TRIGGER update_job_state_updated_at
                 BEFORE UPDATE ON job_state
                 FOR EACH ROW
-                EXECUTE FUNCTION update_updated_at_column();
+                EXECUTE PROCEDURE update_updated_at_column();
         `);
 
         console.log('✅ Database tables ready');

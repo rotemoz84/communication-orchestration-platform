@@ -8,7 +8,6 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const router = express.Router();
 const adminUserRepository = require('../dal/repositories/adminUserRepository');
-const { config } = require('../config');
 
 /**
  * POST /api/auth/login
@@ -69,6 +68,7 @@ router.post('/login', async (req, res) => {
  */
 router.post('/cron-login', async (req, res) => {
     try {
+        const config = require('../config').config;
         const secret = req.get('X-Cron-Secret') || (req.body && req.body.cronSecret);
         const cronSecret = config.cron && config.cron.secret;
         const adminEmail = config.cron && config.cron.adminEmail;
@@ -96,8 +96,8 @@ router.post('/cron-login', async (req, res) => {
             res.json({ success: true, message: 'Session created; use cookie for next request' });
         });
     } catch (error) {
-        console.error('Cron login error:', error.message);
-        res.status(500).json({ error: 'Cron login failed' });
+        console.error('Cron login error:', error.message, error.stack);
+        res.status(500).json({ error: 'Cron login failed', message: error.message });
     }
 });
 
