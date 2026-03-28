@@ -7,6 +7,9 @@ import ContactForm from './ContactForm';
 import Header from './Header';
 import Footer from './Footer';
 
+// --- Hooks ---
+import useTranslation from '../hooks/useTranslation';
+
 // --- Assets ---
 import drOzImg from '../assets/dr_oz.jpg';
 
@@ -23,6 +26,7 @@ const SectionRow = ({ title, subtitle }: any) => (
 );
 
 const HomePage = () => {
+    const { t } = useTranslation();
     const [activeSection, setActiveSection] = useState('about');
     const [isTransparent, setIsTransparent] = useState(true);
 
@@ -54,16 +58,16 @@ const HomePage = () => {
 
     const HERO_POINTS = [
         {
-            title: "מומחיות",
-            desc: "ניסיון מעשי עשיר מקליניקות ובתי חולים מובילים בארץ.",
+            title: t('hero.points.expertise.title'),
+            desc: t('hero.points.expertise.desc'),
         },
         {
-            title: "דיוק",
-            desc: "שימוש בטכנולוגיית אולטרסאונד מהמתקדמות בעולם לאבחון מדויק וחסר פשרות.",
+            title: t('hero.points.precision.title'),
+            desc: t('hero.points.precision.desc'),
         },
         {
-            title: "יחס אישי לכל מטופלת",
-            desc: "ליווי צמוד, אישי, מותאם לצרכים של האשה, עם רגישות מקסימלית לכל אורך התהליך.",
+            title: t('hero.points.personal.title'),
+            desc: t('hero.points.personal.desc'),
         }
     ];
 
@@ -78,7 +82,7 @@ const HomePage = () => {
             {/* Hero Section */}
             <section id="about" className="hero-full" style={{ minHeight: "600px" }}>
                 <div className="hero-bg">
-                    <img src={drOzImg} alt='ד"ר יובל עוז' />
+                    <img src={drOzImg} alt={t('hero.altText')} />
                 </div>
                 <div className="hero-overlay" />
                 <div className="page-wrapper hero-content">
@@ -89,13 +93,14 @@ const HomePage = () => {
                             transition={{ duration: 0.8 }}
                         >
                             <div className="inline-block px-4 py-1 bg-white/10 backdrop-blur-md rounded-full text-white text-sm font-bold mb-6 border border-white/20">
-                                רפואת נשים ברמה אחרת
+                                {t('hero.badge')}
                             </div>
                             <h1 className="text-5xl md:text-7xl mb-8 leading-tight text-white">
-                                ד"ר <span className="text-white">יובל עוז</span>
+                                {t('hero.name')}
                             </h1>
                             <p className="text-xl md:text-2xl text-white/90 max-w-xl font-medium leading-relaxed mb-10">
-מומחה לרפואת נשים, פריון והריון. מומחה לאולטרסאונד גניקולוגי ומיילדותי. סקירת מערכות, שקיפות עורפית, בדיקות מעקב גודל עובר.                            </p>
+                                {t('hero.subtitle')}
+                            </p>
                         </motion.div>
 
                         <motion.div
@@ -125,22 +130,22 @@ const HomePage = () => {
                         {/* Specialties Section */}
                         <section id="specialties">
                             <div className="section-title">
-                                <h2>תחומי התמחות</h2>
-                                <p>השירותים המקצועיים הניתנים בקליניקה</p>
+                                <h2>{t('sections.specialties.title')}</h2>
+                                <p>{t('sections.specialties.subtitle')}</p>
                             </div>
 
                             <div className="grid gap-4">
                                 <SectionRow
-                                    title="בדיקות אולטרסאונד ואבחון"
-                                    subtitle="סקירת מערכות, אבחון מומים, מעקב גודל עובר ושקיפות עורפית. בכל שלב בהריון בטכנולוגיה מתקדמת."
+                                    title={t('sections.specialties.items.ultrasound.title')}
+                                    subtitle={t('sections.specialties.items.ultrasound.subtitle')}
                                 />
                                 <SectionRow
-                                    title="ייעוץ פריון ופוריות"
-                                    subtitle="ליווי אישי רגיש בטיפולי פוריות מורכבים ומתקדמים, תוך שמירה על דיסקרטיות מלאה."
+                                    title={t('sections.specialties.items.fertility.title')}
+                                    subtitle={t('sections.specialties.items.fertility.subtitle')}
                                 />
                                 <SectionRow
-                                    title="מיילדות והריון"
-                                    subtitle="מעקב הריון רציף ואישי להריונות תקינים ובסיכון גבוה."
+                                    title={t('sections.specialties.items.obstetrics.title')}
+                                    subtitle={t('sections.specialties.items.obstetrics.subtitle')}
                                 />
                             </div>
                         </section>
@@ -148,31 +153,31 @@ const HomePage = () => {
                         {/* Experience Section */}
                         <section id="experience">
                             <div className="section-title">
-                                <h2>ניסיון מקצועי</h2>
-                                <p>שלושה עשורים של נסיון מקצועי</p>
+                                <h2>{t('sections.experience.title')}</h2>
+                                <p>{t('sections.experience.subtitle')}</p>
                             </div>
 
                             <div className="grid gap-4">
                                 {[
                                     {
-                                        title: 'מנהל המרכז לבריאות האשה וביצוע בדיקות אולטרסאונד',
-                                        subtitle: 'קופת חולים "כללית" - קריית שמונה'
+                                        title: t('sections.experience.items.manager.title'),
+                                        subtitle: t('sections.experience.items.manager.subtitle')
                                     },
                                     {
-                                        title: 'מנהל מחלקת הריון בסיכון ומחלקת נשים',
-                                        subtitle: 'בית החולים "רבקה זיו" בצפת'
+                                        title: t('sections.experience.items.riskPregnancy.title'),
+                                        subtitle: t('sections.experience.items.riskPregnancy.subtitle')
                                     },
                                     {
-                                        title: 'מייסד ומנהל יחידת אולטרסאונד מיילדותי (הראשון במחוז הגליל)',
-                                        subtitle: 'בית החולים "רבקה זיו" בצפת'
+                                        title: t('sections.experience.items.ultrasoundUnit.title'),
+                                        subtitle: t('sections.experience.items.ultrasoundUnit.subtitle')
                                     },
                                     {
-                                        title: 'התמחות לרפואת נשים, מיילדות ופוריות. התמחות לבדיקות אולטרסאונד',
-                                        subtitle: 'בית החולים "תל השומר", בית החולים "רמבם", בית החולים "בני ציון", בית החולים "רבקה זיו", ואף בחו"ל'
+                                        title: t('sections.experience.items.specialization.title'),
+                                        subtitle: t('sections.experience.items.specialization.subtitle')
                                     },
                                     {
-                                        title: 'תואר דוקטור לרפואה',
-                                        subtitle: 'אוניברסיטת תל אביב'
+                                        title: t('sections.experience.items.degree.title'),
+                                        subtitle: t('sections.experience.items.degree.subtitle')
                                     },
                                 ].map((item, i) => (
                                     <SectionRow

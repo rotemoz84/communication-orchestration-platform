@@ -1,19 +1,30 @@
 import { ArrowRight, Clock, User } from 'lucide-react';
 import { useParams, Link } from 'react-router-dom';
-import { ARTICLES_DATA } from './Articles';
 import ContactForm from './ContactForm';
+import useTranslation from '../hooks/useTranslation';
+import { articlesContent } from '../translations/articles';
 
 const ArticlePage = () => {
+    const { t } = useTranslation();
     const { id } = useParams();
-    const article = ARTICLES_DATA.find(a => a.id === id);
+    const articlesData = articlesContent.data.map(article => ({
+        ...article,
+        title: article.title.he,
+        excerpt: article.excerpt.he,
+        category: article.category.he,
+        content: article.content.he
+    }));
+    const article = articlesData.find((a: any) => a.id === id);
+
+    const pageTexts = t('articlesPage' as any);
 
     if (!article) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
-                    <h2 className="text-2xl font-black text-primary-navy mb-4">מאמר לא נמצא</h2>
+                    <h2 className="text-2xl font-black text-primary-navy mb-4">{pageTexts.notFound.he}</h2>
                     <Link to="/" className="btn-primary !w-auto !px-8">
-                        חזרה לעמוד הבית
+                        {pageTexts.backToHome.he}
                     </Link>
                 </div>
             </div>
@@ -30,7 +41,7 @@ const ArticlePage = () => {
                         className="flex items-center gap-2 text-slate-500 hover:text-secondary-teal transition-colors mb-8 font-bold w-fit"
                     >
                         <ArrowRight className="w-5 h-5" />
-                        <span>חזרה לעמוד הבית</span>
+                        <span>{pageTexts.backToHomeNav.he}</span>
                     </Link>
 
                     <div className="badge !mb-4">{article.category}</div>
@@ -41,11 +52,11 @@ const ArticlePage = () => {
                     <div className="flex flex-wrap gap-8 mt-8 text-slate-400 font-medium">
                         <div className="flex items-center gap-2">
                             <User className="w-4 h-4" />
-                            <span>ד"ר יובל עוז</span>
+                            <span>{pageTexts.author.he}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Clock className="w-4 h-4" />
-                            <span>5 דקות קריאה</span>
+                            <span>{pageTexts.readingTime.he}</span>
                         </div>
                     </div>
                 </div>
@@ -64,9 +75,9 @@ const ArticlePage = () => {
                         </div>
 
                         <div className="bg-secondary-teal/5 border border-secondary-teal/10 rounded-[40px] p-10 mt-20">
-                            <h3 className="text-2xl font-black text-primary-navy mb-4">לסיכום</h3>
+                            <h3 className="text-2xl font-black text-primary-navy mb-4">{pageTexts.summary.he}</h3>
                             <p className="text-slate-600 font-medium leading-relaxed">
-                                חשוב לזכור שכל מקרה הוא אינדיבידואלי. המידע הניתן כאן הוא כללי, ובכל שאלה ספציפית מומלץ להתייעץ עם הרופא המטפל או לקבוע פגישת ייעוץ מסודרת.
+                                {pageTexts.summaryText.he}
                             </p>
                         </div>
                     </div>
@@ -75,8 +86,8 @@ const ArticlePage = () => {
                     <aside>
                         <div className="sticky top-32">
                             <div className="text-center mb-10">
-                                <h4 className="text-2xl font-black text-primary-navy">זקוקה לייעוץ נוסף?</h4>
-                                <p className="text-slate-500 font-medium mt-2">ד"ר עוז כאן לכל שאלה</p>
+                                <h4 className="text-2xl font-black text-primary-navy">{pageTexts.consultTitle.he}</h4>
+                                <p className="text-slate-500 font-medium mt-2">{pageTexts.consultSubtitle.he}</p>
                             </div>
                             <ContactForm id="article-contact" showTitle={false} />
                         </div>

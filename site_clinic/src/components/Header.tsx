@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
+import useTranslation from '../hooks/useTranslation';
 
 interface HeaderProps {
     activeSection: string;
@@ -10,6 +11,7 @@ interface HeaderProps {
 }
 
 const Header = ({ activeSection, isTransparent, onNavigateHome }: HeaderProps) => {
+    const { t } = useTranslation();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
@@ -45,15 +47,15 @@ const Header = ({ activeSection, isTransparent, onNavigateHome }: HeaderProps) =
                 <div className="page-wrapper header-inner">
                     <div className="flex items-center gap-2 cursor-pointer" onClick={onNavigateHome}>
                         <h1 className="text-lg sm:text-2xl font-black tracking-tighter">
-                            <span className={isTransparent ? 'text-transparent' : 'text-gradient'}>ד"ר יובל עוז</span>
+                            <span className={isTransparent ? 'text-transparent' : 'text-gradient'}>{t('navigation.home')}</span>
                         </h1>
                     </div>
 
                     <nav className="nav-links">
-                        <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('specialties'); }} className={`nav-link ${activeSection === 'specialties' ? 'active' : ''} ${isTransparent ? 'text-white' : ''}`}>תחומי התמחות</a>
-                        <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('experience'); }} className={`nav-link ${activeSection === 'experience' ? 'active' : ''} ${isTransparent ? 'text-white' : ''}`}>ניסיון מקצועי</a>
-                        {/* <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('articles'); }} className={`nav-link ${activeSection === 'articles' ? 'active' : ''} ${isTransparent ? 'text-white' : ''}`}>מאמרים</a> */}
-                        <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('about'); }} className={`nav-link ${activeSection === 'about' ? 'active' : ''} ${isTransparent ? 'text-white' : ''}`}>אודות</a>
+                        <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('specialties'); }} className={`nav-link ${activeSection === 'specialties' ? 'active' : ''} ${isTransparent ? 'text-white' : ''}`}>{t('navigation.specialties')}</a>
+                        <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('experience'); }} className={`nav-link ${activeSection === 'experience' ? 'active' : ''} ${isTransparent ? 'text-white' : ''}`}>{t('navigation.experience')}</a>
+                        {/* <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('articles'); }} className={`nav-link ${activeSection === 'articles' ? 'active' : ''} ${isTransparent ? 'text-white' : ''}`}>{t('navigation.articles')}</a> */}
+                        <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('about'); }} className={`nav-link ${activeSection === 'about' ? 'active' : ''} ${isTransparent ? 'text-white' : ''}`}>{t('navigation.about')}</a>
                     </nav>
 
                     <div className="flex items-center gap-2 sm:gap-4 flex-nowrap shrink-0">
@@ -82,18 +84,18 @@ const Header = ({ activeSection, isTransparent, onNavigateHome }: HeaderProps) =
                             className="mobile-menu-panel"
                         >
                             <div className="mobile-menu-header">
-                                <span className="font-black text-2xl text-primary-navy">תפריט</span>
+                                <span className="font-black text-2xl text-primary-navy">{t('navigation.menu')}</span>
                                 <button onClick={() => setIsMenuOpen(false)} className="mobile-close-btn">
                                     <X className="w-6 h-6" />
                                 </button>
                             </div>
                             <nav className="mobile-nav-stack">
-                                <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('specialties'); setIsMenuOpen(false); }} className={`mobile-nav-link ${activeSection === 'specialties' ? 'text-secondary-teal' : ''}`}>תחומי התמחות</a>
-                                <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('experience'); setIsMenuOpen(false); }} className={`mobile-nav-link ${activeSection === 'experience' ? 'text-secondary-teal' : ''}`}>ניסיון מקצועי</a>
-                                {/* <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('articles'); setIsMenuOpen(false); }} className={`mobile-nav-link ${activeSection === 'articles' ? 'text-secondary-teal' : ''}`}>מאמרים</a> */}
-                                <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('about'); setIsMenuOpen(false); }} className={`mobile-nav-link ${activeSection === 'about' ? 'text-secondary-teal' : ''}`}>אודות</a>
+                                <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('specialties'); setIsMenuOpen(false); }} className={`mobile-nav-link ${activeSection === 'specialties' ? 'text-secondary-teal' : ''}`}>{t('navigation.specialties')}</a>
+                                <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('experience'); setIsMenuOpen(false); }} className={`mobile-nav-link ${activeSection === 'experience' ? 'text-secondary-teal' : ''}`}>{t('navigation.experience')}</a>
+                                {/* <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('articles'); setIsMenuOpen(false); }} className={`mobile-nav-link ${activeSection === 'articles' ? 'text-secondary-teal' : ''}`}>{t('navigation.articles')}</a> */}
+                                <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('about'); setIsMenuOpen(false); }} className={`mobile-nav-link ${activeSection === 'about' ? 'text-secondary-teal' : ''}`}>{t('navigation.about')}</a>
                                 <a href="#/" onClick={(e) => { e.preventDefault(); scrollToSection('contact'); setIsMenuOpen(false); }} className="btn-primary">
-                                    פנייה אישית
+                                    {t('navigation.contact')}
                                 </a>
                             </nav>
                         </motion.div>
