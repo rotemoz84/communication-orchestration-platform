@@ -92,7 +92,7 @@ try {
             </tr>
             <tr style='background-color: #f8f9fa;'>
                 <td style='padding: 12px; border: 1px solid #dee2e6; font-weight: bold;'>טלפון:</td>
-                <td style='padding: 12px; border: 1px solid #dee2e6;'>$phone</td>
+                <td style='padding: 12px; border: 1px solid #dee2e6;'><a href='https://wa.me/+972" . preg_replace('/[^0-9]/', '', $phone) . "'>" . $phone . "</a></td>
             </tr>
             <tr>
                 <td style='padding: 12px; border: 1px solid #dee2e6; font-weight: bold;'>אימייל:</td>
