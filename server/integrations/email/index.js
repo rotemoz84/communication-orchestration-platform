@@ -70,9 +70,10 @@ async function testEmailConnection() {
 function formatInquiryAsTableRow(inquiry) {
     const dateStr = new Date(inquiry.timestamp).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem' });
     const rawPhone = inquiry.phone || '';
+    const countryPrefix = '972';
     const whatsappPhone = rawPhone.replace(/\D/g, '');
     const phoneContent = whatsappPhone
-        ? `<a href="https://wa.me/${whatsappPhone}" target="_blank" rel="noopener noreferrer" style="color: #128C7E; text-decoration: none;">${rawPhone}</a>`
+        ? `<a href="https://wa.me/${countryPrefix}${whatsappPhone}" target="_blank" rel="noopener noreferrer" style="color: #128C7E; text-decoration: none;">${rawPhone}</a>`
         : '-';
 
     return `
