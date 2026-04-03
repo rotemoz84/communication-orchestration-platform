@@ -69,10 +69,17 @@ async function testEmailConnection() {
  */
 function formatInquiryAsTableRow(inquiry) {
     const dateStr = new Date(inquiry.timestamp).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem' });
+    const rawPhone = inquiry.phone || '';
+    const countryPrefix = '972';
+    const whatsappPhone = rawPhone.replace(/\D/g, '');
+    const phoneContent = whatsappPhone
+        ? `<a href="https://wa.me/${countryPrefix}${whatsappPhone}" target="_blank" rel="noopener noreferrer" style="color: #128C7E; text-decoration: none;">${rawPhone}</a>`
+        : '-';
+
     return `
         <tr>
             <td style="border: 1px solid #ddd; padding: 4px 6px; white-space: nowrap;">${dateStr}</td>
-            <td style="border: 1px solid #ddd; padding: 4px 6px; white-space: nowrap;">${inquiry.phone || '-'}</td>
+            <td style="border: 1px solid #ddd; padding: 4px 6px; white-space: nowrap;">${phoneContent}</td>
             <td style="border: 1px solid #ddd; padding: 4px 6px; white-space: nowrap;">${inquiry.name || '-'}</td>
             <td style="border: 1px solid #ddd; padding: 4px 6px;">${inquiry.email || '-'}</td>
             <td style="border: 1px solid #ddd; padding: 4px 6px; white-space: nowrap;">${inquiry.service || '-'}</td>
