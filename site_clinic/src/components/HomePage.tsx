@@ -158,32 +158,11 @@ const HomePage = () => {
                             </div>
 
                             <div className="grid gap-4">
-                                {[
-                                    {
-                                        title: t('sections.experience.items.manager.title'),
-                                        subtitle: t('sections.experience.items.manager.subtitle')
-                                    },
-                                    {
-                                        title: t('sections.experience.items.riskPregnancy.title'),
-                                        subtitle: t('sections.experience.items.riskPregnancy.subtitle')
-                                    },
-                                    {
-                                        title: t('sections.experience.items.ultrasoundUnit.title'),
-                                        subtitle: t('sections.experience.items.ultrasoundUnit.subtitle')
-                                    },
-                                    {
-                                        title: t('sections.experience.items.specialization.title'),
-                                        subtitle: t('sections.experience.items.specialization.subtitle')
-                                    },
-                                    {
-                                        title: t('sections.experience.items.degree.title'),
-                                        subtitle: t('sections.experience.items.degree.subtitle')
-                                    },
-                                ].map((item, i) => (
+                                {t('sections.experience.items').map((_: any, i: number) => (
                                     <SectionRow
                                         key={i}
-                                        title={item.title}
-                                        subtitle={item.subtitle}
+                                        title={t(`sections.experience.items.${i}.title`)}
+                                        subtitle={t(`sections.experience.items.${i}.subtitle`)}
                                     />
                                 ))}
                             </div>
