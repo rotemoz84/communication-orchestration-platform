@@ -1,13 +1,13 @@
 /**
  * Voice webhook and IVR control routes.
  *
- * The incoming TeXML entry point is active. Downstream voice callbacks remain
- * unavailable until their Telnyx flows are implemented.
+ * The incoming TeXML entry point and representative dial callback are active.
+ * Remaining downstream voice callbacks stay unavailable until implemented.
  */
 
 const express = require('express');
 const { config } = require('../config');
-const { DEFAULTS } = require('../constants');
+const { CALL_OUTCOMES, DEFAULTS } = require('../constants');
 const callRepository = require('../dal/repositories/callRepository');
 const {
     normalizeTeXMLWebhook,
@@ -32,7 +32,6 @@ const {
 const router = express.Router();
 
 const VOICE_WEBHOOK_PATHS = [
-    '/dial-callback',
     '/closed-menu',
     '/no-answer-menu',
     '/outgoing-status',
@@ -93,6 +92,56 @@ router.post('/incoming', async (req, res) => {
         ));
     } catch (error) {
         console.error('Error handling incoming voice call:', error.message);
+        return res.type('text/xml').send(texmlResponse(
+            texmlSay(getMessage('IVR_error')),
+            texmlHangup()
+        ));
+    }
+});
+
+/**
+ * Handle the outcome of dialing the representative during open hours.
+ * POST /api/voice/dial-callback
+ */
+router.post('/dial-callback', async (req, res) => {
+    const webhook = normalizeTeXMLWebhook(req.body);
+    const representativeAnswered = webhook.dialStatus === 'completed';
+
+    try {
+        if (webhook.providerCallId) {
+            const updatedCall = await callRepository.updateByProviderCallId(
+                webhook.providerCallId,
+                {
+                    outcome: representativeAnswered
+                        ? CALL_OUTCOMES.ANSWERED
+                        : CALL_OUTCOMES.NO_ANSWER_HANGUP,
+                    duration: webhook.duration
+                }
+            );
+
+            if (!updatedCall) {
+                console.error(`Failed to update dial outcome for provider ID ${webhook.providerCallId}`);
+            }
+        } else {
+            console.error('Dial callback did not include a provider call ID');
+        }
+
+        if (representativeAnswered) {
+            return res.type('text/xml').send(texmlResponse(texmlHangup()));
+        }
+
+        return res.type('text/xml').send(texmlResponse(
+            texmlGather(getMessage('IVR_no_answer'), {
+                action: '/api/voice/no-answer-menu',
+                method: 'POST',
+                timeout: 15,
+                numDigits: 1
+            }),
+            texmlSay(getMessage('IVR_goodbye')),
+            texmlHangup()
+        ));
+    } catch (error) {
+        console.error('Error handling representative dial callback:', error.message);
         return res.type('text/xml').send(texmlResponse(
             texmlSay(getMessage('IVR_error')),
             texmlHangup()

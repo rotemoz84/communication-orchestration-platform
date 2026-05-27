@@ -95,9 +95,13 @@ and requires Telnyx configuration. Call records use the provider-neutral
 records the incoming call, returns representative dialing TeXML during open
 hours, and returns the closed-hours Hebrew menu TeXML otherwise.
 
-Inbound voice migration is still underway for downstream callbacks.
-`POST /voice/dial-callback`, `/voice/closed-menu`, `/voice/no-answer-menu`,
-`/voice/outgoing-status`, and `/voice/status` currently return `501`.
+`POST /voice/dial-callback` processes the result of dialing the representative.
+An answered call is recorded and ended; an unsuccessful dial is recorded and
+returns the Hebrew no-answer menu.
+
+Inbound voice migration is still underway for the remaining callbacks.
+`POST /voice/closed-menu`, `/voice/no-answer-menu`, `/voice/outgoing-status`,
+and `/voice/status` currently return `501`.
 
 WhatsApp is intentionally deferred to a future Meta implementation. Existing
 paths under `/whatsapp` such as `/send`, `/incoming`, `/status`, and `/test`

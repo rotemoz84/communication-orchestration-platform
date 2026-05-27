@@ -8,6 +8,7 @@ const servicePath = require.resolve('../../ivr/service');
 const routesPath = require.resolve('../../ivr/routes');
 const priorModules = new Map();
 const incomingCalls = [];
+const updatedCalls = [];
 
 let server;
 let baseUrl;
@@ -24,7 +25,11 @@ function replaceModule(modulePath, exports) {
 }
 
 async function incomingRequest(fields) {
-    return fetch(`${baseUrl}/api/voice/incoming`, {
+    return voiceRequest('/incoming', fields);
+}
+
+async function voiceRequest(path, fields) {
+    return fetch(`${baseUrl}/api/voice${path}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams(fields)
@@ -42,6 +47,10 @@ before(async () => {
         async create(call) {
             incomingCalls.push(call);
             return { callId: `CALL-INCOMING-${incomingCalls.length}`, ...call };
+        },
+        async updateByProviderCallId(providerCallId, updateData) {
+            updatedCalls.push({ providerCallId, ...updateData });
+            return { providerCallId, ...updateData };
         }
     });
     replaceModule(servicePath, {
@@ -62,6 +71,7 @@ before(async () => {
 
 beforeEach(() => {
     incomingCalls.length = 0;
+    updatedCalls.length = 0;
     officeOpen = true;
 });
 
@@ -132,5 +142,47 @@ test('closed-hours incoming call is tracked and receives a Hebrew menu with hang
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({ Digits: '9' })
     });
+    assert.equal(deferredMenu.status, 501);
+});
+
+test('answered representative callback updates the incoming call and ends the flow', async () => {
+    const response = await voiceRequest('/dial-callback', {
+        CallSid: 'v3:incoming-answered',
+        DialCallStatus: 'completed',
+        DialCallDuration: '42'
+    });
+    const xml = await response.text();
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(updatedCalls, [{
+        providerCallId: 'v3:incoming-answered',
+        outcome: 'answered',
+        duration: '42'
+    }]);
+    assert.equal(
+        xml,
+        '<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>'
+    );
+});
+
+test('busy representative callback updates the call and returns the no-answer menu', async () => {
+    const response = await voiceRequest('/dial-callback', {
+        CallSid: 'v3:incoming-busy',
+        DialCallStatus: 'busy',
+        DialCallDuration: '6'
+    });
+    const xml = await response.text();
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(updatedCalls, [{
+        providerCallId: 'v3:incoming-busy',
+        outcome: 'no_answer_hangup',
+        duration: '6'
+    }]);
+    assert.match(xml, /<Gather action="\/api\/voice\/no-answer-menu" method="POST" timeout="15" numDigits="1">/);
+    assert.match(xml, /<Say voice="alice" language="he-IL">[\s\S]*הקישו 9/);
+    assert.match(xml, /<\/Gather><Say voice="alice" language="he-IL">תודה שהתקשרת\. להתראות\.<\/Say><Hangup\/>/);
+
+    const deferredMenu = await voiceRequest('/no-answer-menu', { Digits: '9' });
     assert.equal(deferredMenu.status, 501);
 });
