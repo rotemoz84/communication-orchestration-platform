@@ -218,6 +218,29 @@ function texmlHangup() {
 }
 
 /**
+ * Normalize the form fields supplied in Telnyx TeXML webhook callbacks.
+ *
+ * The same shape is used for instruction fetches, Gather actions, Dial
+ * actions, and call status callbacks so IVR routes do not need provider field
+ * names scattered through their business logic.
+ *
+ * @param {Object} payload - Telnyx application/x-www-form-urlencoded fields
+ */
+function normalizeTeXMLWebhook(payload = {}) {
+    const fields = payload || {};
+
+    return {
+        from: fields.From ?? null,
+        to: fields.To ?? null,
+        providerCallId: fields.CallSid ?? null,
+        digits: fields.Digits ?? null,
+        dialStatus: fields.DialCallStatus ?? null,
+        callStatus: fields.CallStatus ?? null,
+        duration: fields.DialCallDuration ?? fields.CallDuration ?? null
+    };
+}
+
+/**
  * Handle incoming call webhook
  * @param {Object} webhookData - Telnyx webhook data
  */
@@ -282,5 +305,6 @@ module.exports = {
     texmlDial,
     texmlGather,
     texmlHangup,
+    normalizeTeXMLWebhook,
     handleIncomingWebhook
 };
