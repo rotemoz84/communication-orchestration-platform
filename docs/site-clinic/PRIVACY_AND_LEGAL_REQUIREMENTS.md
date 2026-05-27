@@ -86,8 +86,9 @@ Implementation work still needed:
 - Decide whether IP/user-agent logging is necessary and proportionate.
 - Establish deletion/access request procedures across database, CSV, and email
   copies.
-- Review the Hebrew user-visible policy in `src/translations/texts.ts` against
-  the final operational process and legal advice.
+- Review the Hebrew user-visible policy in
+  `site_clinic/src/translations/texts.ts` against the final operational process
+  and legal advice.
 
 ## Cookie And Tracking Note
 

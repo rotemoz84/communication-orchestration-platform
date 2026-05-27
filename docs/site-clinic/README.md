@@ -7,7 +7,8 @@ without server rewrite configuration.
 ## Routes
 
 - `#/` - landing page and lead form
-- `#/privacy-policy` - privacy policy rendered from `src/translations/texts.ts`
+- `#/privacy-policy` - privacy policy rendered from
+  `site_clinic/src/translations/texts.ts`
 - `#/articles/:id` - article page support; the articles section is currently
   hidden on the landing page
 
@@ -22,9 +23,9 @@ npm run lint
 
 ## Lead Submission Flow
 
-The contact form in `src/components/ContactForm.tsx` collects a phone number
-or email address, optional service/message fields, privacy consent, and
-separate consent when a pregnancy week is entered.
+The contact form in `site_clinic/src/components/ContactForm.tsx` collects a
+phone number or email address, optional service/message fields, privacy
+consent, and separate consent when a pregnancy week is entered.
 
 It posts first to:
 
@@ -32,9 +33,9 @@ It posts first to:
 https://api.drozyuval.com/api/inquiries
 ```
 
-There is also a PHP submission endpoint at `src/contact.php`, deployed as
-`https://drozyuval.com/contact.php`. It logs submissions to CSV and sends an
-email through PHP hosting configuration.
+There is also a PHP submission endpoint at `site_clinic/src/contact.php`,
+deployed as `https://drozyuval.com/contact.php`. It logs submissions to CSV
+and sends an email through PHP hosting configuration.
 
 Important current behavior: the React form calls the PHP endpoint even after a
 successful main API response as a temporary email backup. This can create two
@@ -56,6 +57,6 @@ a lower-friction lead collection flow:
 ## Active Privacy Surface
 
 The user-visible policy and consent copy live in
-`src/components/PrivacyPolicy.tsx` and `src/translations/texts.ts`. Legal or
-retention claims in those files should be reviewed with the clinic before
-production changes.
+`site_clinic/src/components/PrivacyPolicy.tsx` and
+`site_clinic/src/translations/texts.ts`. Legal or retention claims in those
+files should be reviewed with the clinic before production changes.

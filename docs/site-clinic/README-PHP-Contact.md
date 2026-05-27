@@ -1,7 +1,7 @@
 # PHP Contact Endpoint
 
-`src/contact.php` is an active hosting-side contact endpoint used by the React
-site at `https://drozyuval.com/contact.php`.
+`site_clinic/src/contact.php` is an active hosting-side contact endpoint used
+by the React site at `https://drozyuval.com/contact.php`.
 
 ## Current Use
 

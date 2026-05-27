@@ -29,7 +29,7 @@ The original concept was:
 - Capture and expose follow-up requests for clinic staff.
 
 The active migration plan in
-`../server/docs/TELNYX_TEXML_IVR_IMPLEMENTATION_PLAN.md` refines that intent:
+`../../server/TELNYX_TEXML_IVR_IMPLEMENTATION_PLAN.md` refines that intent:
 
 - Telnyx TeXML will provide the future inbound voice flow.
 - Closed/no-answer callers may press `9`.

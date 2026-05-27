@@ -101,7 +101,7 @@ async function testTelnyxMigration() {
     console.log('3. Configure webhooks in Telnyx Portal');
     console.log('4. Test with real phone numbers');
     console.log('');
-    console.log('📚 For detailed migration guide, see: TELNYX_MIGRATION_GUIDE.md');
+    console.log('📚 For current Telnyx documentation, see: ../docs/server/TELNYX_CONNECTION_GUIDE.md');
 
   } catch (error) {
     if (error.code === 'ECONNREFUSED') {

@@ -2,7 +2,7 @@
 
 This note applies to the existing outbound-call endpoint,
 `POST /api/calls/outgoing`. Inbound IVR is not active yet; its TeXML rollout
-is tracked in `docs/TELNYX_TEXML_IVR_IMPLEMENTATION_PLAN.md`.
+is tracked in `TELNYX_TEXML_IVR_IMPLEMENTATION_PLAN.md` in this directory.
 
 ## Required Values
 
@@ -18,7 +18,7 @@ BASE_URL=https://api.drozyuval.com
 
 The Connection ID is available in the Telnyx Portal under **Voice** /
 **Call Control** / **Connections**. The server passes it when it creates an
-outbound call in `integrations/telnyx/voice.js`.
+outbound call in `server/integrations/telnyx/voice.js`.
 
 ## Check
 
