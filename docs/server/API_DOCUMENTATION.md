@@ -99,9 +99,13 @@ hours, and returns the closed-hours Hebrew menu TeXML otherwise.
 An answered call is recorded and ended; an unsuccessful dial is recorded and
 returns the Hebrew no-answer menu.
 
-Inbound voice migration is still underway for the remaining callbacks.
-`POST /voice/closed-menu`, `/voice/no-answer-menu`, `/voice/outgoing-status`,
-and `/voice/status` currently return `501`.
+`POST /voice/closed-menu` and `/voice/no-answer-menu` process the caller's
+menu choice. Digit `9` records a future WhatsApp follow-up request and sends
+the temporary internal IVR notification email when it is configured; the
+spoken confirmation only states that the request was received.
+
+Inbound voice migration is still underway for status callbacks.
+`POST /voice/outgoing-status` and `/voice/status` currently return `501`.
 
 WhatsApp is intentionally deferred to a future Meta implementation. Existing
 paths under `/whatsapp` such as `/send`, `/incoming`, `/status`, and `/test`

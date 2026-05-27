@@ -4,15 +4,18 @@ const express = require('express');
 
 const configPath = require.resolve('../../config');
 const repositoryPath = require.resolve('../../dal/repositories/callRepository');
+const emailPath = require.resolve('../../integrations/email');
 const servicePath = require.resolve('../../ivr/service');
 const routesPath = require.resolve('../../ivr/routes');
 const priorModules = new Map();
 const incomingCalls = [];
 const updatedCalls = [];
+const notifications = [];
 
 let server;
 let baseUrl;
 let officeOpen;
+let notificationResult;
 
 function replaceModule(modulePath, exports) {
     priorModules.set(modulePath, require.cache[modulePath]);
@@ -53,6 +56,12 @@ before(async () => {
             return { providerCallId, ...updateData };
         }
     });
+    replaceModule(emailPath, {
+        async sendIvrFallbackNotification(notification) {
+            notifications.push(notification);
+            return notificationResult;
+        }
+    });
     replaceModule(servicePath, {
         async isOfficeOpen() {
             return officeOpen;
@@ -72,7 +81,9 @@ before(async () => {
 beforeEach(() => {
     incomingCalls.length = 0;
     updatedCalls.length = 0;
+    notifications.length = 0;
     officeOpen = true;
+    notificationResult = { success: true, messageId: 'message-1' };
 });
 
 after(async () => {
@@ -116,7 +127,7 @@ test('open-hours incoming Telnyx call is tracked and forwarded to the representa
     );
 });
 
-test('closed-hours incoming call is tracked and receives a Hebrew menu with hangup fallback', async () => {
+test('closed-hours incoming call can request follow-up through the interim notification', async () => {
     officeOpen = false;
 
     const response = await incomingRequest({
@@ -135,14 +146,30 @@ test('closed-hours incoming call is tracked and receives a Hebrew menu with hang
     }]);
     assert.match(xml, /<Gather action="\/api\/voice\/closed-menu" method="POST" timeout="15" numDigits="1">/);
     assert.match(xml, /<Say voice="alice" language="he-IL">[\s\S]*הקישו 9/);
+    assert.doesNotMatch(xml, /וואטסאפ/);
     assert.match(xml, /<\/Gather><Say voice="alice" language="he-IL">תודה שהתקשרת\. להתראות\.<\/Say><Hangup\/>/);
 
-    const deferredMenu = await fetch(`${baseUrl}/api/voice/closed-menu`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ Digits: '9' })
+    const selectedMenu = await voiceRequest('/closed-menu', {
+        CallSid: 'v3:incoming-closed',
+        From: '+972501234567',
+        Digits: '9'
     });
-    assert.equal(deferredMenu.status, 501);
+    const selectedXml = await selectedMenu.text();
+
+    assert.equal(selectedMenu.status, 200);
+    assert.equal(notifications.length, 1);
+    assert.equal(notifications[0].callerNumber, '+972501234567');
+    assert.equal(notifications[0].reason, 'closed_hours');
+    assert.equal(notifications[0].providerCallId, 'v3:incoming-closed');
+    assert.ok(notifications[0].timestamp instanceof Date);
+    assert.deepEqual(updatedCalls, [{
+        providerCallId: 'v3:incoming-closed',
+        outcome: 'closed_hours_whatsapp',
+        notes: 'Future WhatsApp follow-up requested (closed_hours); interim email sent.'
+    }]);
+    assert.match(selectedXml, /בקשתך התקבלה/);
+    assert.doesNotMatch(selectedXml, /וואטסאפ/);
+    assert.match(selectedXml, /<Hangup\/>/);
 });
 
 test('answered representative callback updates the incoming call and ends the flow', async () => {
@@ -165,7 +192,7 @@ test('answered representative callback updates the incoming call and ends the fl
     );
 });
 
-test('busy representative callback updates the call and returns the no-answer menu', async () => {
+test('busy representative callback can request follow-up through the interim notification', async () => {
     const response = await voiceRequest('/dial-callback', {
         CallSid: 'v3:incoming-busy',
         DialCallStatus: 'busy',
@@ -181,8 +208,74 @@ test('busy representative callback updates the call and returns the no-answer me
     }]);
     assert.match(xml, /<Gather action="\/api\/voice\/no-answer-menu" method="POST" timeout="15" numDigits="1">/);
     assert.match(xml, /<Say voice="alice" language="he-IL">[\s\S]*הקישו 9/);
+    assert.doesNotMatch(xml, /וואטסאפ/);
     assert.match(xml, /<\/Gather><Say voice="alice" language="he-IL">תודה שהתקשרת\. להתראות\.<\/Say><Hangup\/>/);
 
-    const deferredMenu = await voiceRequest('/no-answer-menu', { Digits: '9' });
-    assert.equal(deferredMenu.status, 501);
+    const selectedMenu = await voiceRequest('/no-answer-menu', {
+        CallSid: 'v3:incoming-busy',
+        From: '+972501234567',
+        Digits: '9'
+    });
+    const selectedXml = await selectedMenu.text();
+
+    assert.equal(selectedMenu.status, 200);
+    assert.equal(notifications.length, 1);
+    assert.equal(notifications[0].reason, 'no_answer');
+    assert.equal(notifications[0].providerCallId, 'v3:incoming-busy');
+    assert.deepEqual(updatedCalls, [{
+        providerCallId: 'v3:incoming-busy',
+        outcome: 'no_answer_hangup',
+        duration: '6'
+    }, {
+        providerCallId: 'v3:incoming-busy',
+        outcome: 'no_answer_whatsapp',
+        notes: 'Future WhatsApp follow-up requested (no_answer); interim email sent.'
+    }]);
+    assert.match(selectedXml, /בקשתך התקבלה/);
+    assert.doesNotMatch(selectedXml, /וואטסאפ/);
+    assert.match(selectedXml, /<Hangup\/>/);
+});
+
+test('menu timeout or invalid digit ends the call without sending a notification', async () => {
+    const timedOut = await voiceRequest('/closed-menu', {
+        CallSid: 'v3:incoming-timeout',
+        From: '+972501234567'
+    });
+    const invalid = await voiceRequest('/no-answer-menu', {
+        CallSid: 'v3:incoming-invalid',
+        From: '+972501234567',
+        Digits: '2'
+    });
+    const timedOutXml = await timedOut.text();
+    const invalidXml = await invalid.text();
+
+    assert.equal(timedOut.status, 200);
+    assert.equal(invalid.status, 200);
+    assert.equal(notifications.length, 0);
+    assert.deepEqual(updatedCalls, []);
+    assert.match(timedOutXml, /תודה שהתקשרת\. להתראות\./);
+    assert.match(invalidXml, /תודה שהתקשרת\. להתראות\./);
+    assert.match(timedOutXml, /<Hangup\/>/);
+    assert.match(invalidXml, /<Hangup\/>/);
+});
+
+test('follow-up request remains graceful when interim notification is unavailable', async () => {
+    notificationResult = { success: false, error: 'SMTP not configured' };
+
+    const response = await voiceRequest('/closed-menu', {
+        CallSid: 'v3:incoming-no-email',
+        From: '+972501234567',
+        Digits: '9'
+    });
+    const xml = await response.text();
+
+    assert.equal(response.status, 200);
+    assert.equal(notifications.length, 1);
+    assert.deepEqual(updatedCalls, [{
+        providerCallId: 'v3:incoming-no-email',
+        outcome: 'closed_hours_whatsapp',
+        notes: 'Future WhatsApp follow-up requested (closed_hours); interim email unavailable: SMTP not configured.'
+    }]);
+    assert.match(xml, /בקשתך התקבלה/);
+    assert.match(xml, /<Hangup\/>/);
 });

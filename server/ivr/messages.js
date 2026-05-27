@@ -8,18 +8,15 @@ const IVR_MESSAGES = {
     // IVR_no_answer: Rep didn't answer after 4 rings
     IVR_no_answer: `
         מצטערים, אין מענה כרגע.
-        לקבלת הודעה בוואטסאפ, הקישו 9.
+        להשארת בקשה לחזרה, הקישו 9.
     `,
 
-    // IVR_whatsapp_sent: WhatsApp sent confirmation
-    IVR_whatsapp_sent: `
-        תודה! שלחנו לך הודעת וואטסאפ.
+    // Follow-up request confirmation while WhatsApp integration is deferred.
+    IVR_request_received: `
+        תודה! בקשתך התקבלה.
         נציג יחזור אליך בהקדם.
         להתראות.
     `,
-
-    // Office closed - sending WhatsApp
-    IVR_closed_sending_whatsapp: `שולחים לך הודעת וואטסאפ. להתראות.`,
 
     // Thank you and goodbye
     IVR_goodbye: `תודה שהתקשרת. להתראות.`,

@@ -1,14 +1,15 @@
 /**
  * Voice webhook and IVR control routes.
  *
- * The incoming TeXML entry point and representative dial callback are active.
- * Remaining downstream voice callbacks stay unavailable until implemented.
+ * Incoming TeXML, representative dialing, and follow-up menus are active.
+ * Status callbacks stay unavailable until implemented.
  */
 
 const express = require('express');
 const { config } = require('../config');
 const { CALL_OUTCOMES, DEFAULTS } = require('../constants');
 const callRepository = require('../dal/repositories/callRepository');
+const { sendIvrFallbackNotification } = require('../integrations/email');
 const {
     normalizeTeXMLWebhook,
     texmlDial,
@@ -32,8 +33,6 @@ const {
 const router = express.Router();
 
 const VOICE_WEBHOOK_PATHS = [
-    '/closed-menu',
-    '/no-answer-menu',
     '/outgoing-status',
     '/status'
 ];
@@ -148,6 +147,59 @@ router.post('/dial-callback', async (req, res) => {
         ));
     }
 });
+
+function createFollowUpMenuHandler(reason, requestedOutcome) {
+    return async (req, res) => {
+        const webhook = normalizeTeXMLWebhook(req.body);
+
+        if (webhook.digits !== '9') {
+            return res.type('text/xml').send(texmlResponse(
+                texmlSay(getMessage('IVR_goodbye')),
+                texmlHangup()
+            ));
+        }
+
+        const callerNumber = webhook.from || 'unknown';
+        try {
+            // TODO(meta-whatsapp): replace this interim email with the Meta WhatsApp starter message.
+            const notification = await sendIvrFallbackNotification({
+                callerNumber,
+                reason,
+                providerCallId: webhook.providerCallId,
+                timestamp: new Date()
+            });
+
+            if (webhook.providerCallId) {
+                await callRepository.updateByProviderCallId(webhook.providerCallId, {
+                    outcome: requestedOutcome,
+                    notes: notification.success
+                        ? `Future WhatsApp follow-up requested (${reason}); interim email sent.`
+                        : `Future WhatsApp follow-up requested (${reason}); interim email unavailable: ${notification.error}.`
+                });
+            }
+
+            return res.type('text/xml').send(texmlResponse(
+                texmlSay(getMessage('IVR_request_received')),
+                texmlHangup()
+            ));
+        } catch (error) {
+            console.error('Error handling follow-up menu selection:', error.message);
+            return res.type('text/xml').send(texmlResponse(
+                texmlSay(getMessage('IVR_request_received')),
+                texmlHangup()
+            ));
+        }
+    };
+}
+
+router.post(
+    '/closed-menu',
+    createFollowUpMenuHandler('closed_hours', CALL_OUTCOMES.CLOSED_HOURS_WHATSAPP)
+);
+router.post(
+    '/no-answer-menu',
+    createFollowUpMenuHandler('no_answer', CALL_OUTCOMES.NO_ANSWER_WHATSAPP)
+);
 
 VOICE_WEBHOOK_PATHS.forEach(path => {
     router.post(path, voiceMigrationPending);
