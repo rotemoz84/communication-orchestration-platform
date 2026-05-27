@@ -15,6 +15,12 @@ try {
     telnyx = null;
 }
 
+const TEXML_DECLARATION = '<?xml version="1.0" encoding="UTF-8"?>';
+const HEBREW_SAY_DEFAULTS = Object.freeze({
+    voice: 'alice',
+    language: 'he-IL'
+});
+
 /**
  * Create an outbound call
  * @param {string} to - Destination phone number
@@ -135,49 +141,80 @@ function formatPhoneNumber(phoneNumber) {
 }
 
 /**
- * Generate Telnyx XML for IVR
- * @param {Object} options - IVR options
+ * Escape user/configuration values before placing them in a TeXML document.
+ * @param {*} value - Text or attribute value
  */
-function generateIVRXml(options = {}) {
-    const { 
-        message, 
-        gather = false, 
-        timeout = 10, 
-        numDigits = 1,
-        actionUrl = null,
-        redirectUrl = null
-    } = options;
+function escapeXml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+}
 
-    let xml = '<?xml version="1.0" encoding="UTF-8"?>';
-    xml += '<Response>';
+function serializeAttributes(attributes = {}) {
+    return Object.entries(attributes)
+        .filter(([, value]) => value !== undefined && value !== null)
+        .map(([name, value]) => ` ${name}="${escapeXml(value)}"`)
+        .join('');
+}
 
-    if (message) {
-        xml += `<Say language="${options.language || 'en-US'}">${message}</Say>`;
-    }
+/**
+ * Wrap rendered TeXML verbs in the required response document.
+ * @param {...string|string[]} verbs - Rendered TeXML verbs
+ */
+function texmlResponse(...verbs) {
+    const body = verbs
+        .flat()
+        .filter(verb => verb !== undefined && verb !== null && verb !== false)
+        .join('');
 
-    if (gather) {
-        xml += '<Gather';
-        xml += ` timeout="${timeout}"`;
-        xml += ` numDigits="${numDigits}"`;
-        if (actionUrl) {
-            xml += ` action="${actionUrl}"`;
-            xml += ` method="POST"`;
-        }
-        xml += '>';
-        
-        if (options.prompt) {
-            xml += `<Say language="${options.language || 'en-US'}">${options.prompt}</Say>`;
-        }
-        
-        xml += '</Gather>';
-    }
+    return `${TEXML_DECLARATION}<Response>${body}</Response>`;
+}
 
-    if (redirectUrl) {
-        xml += `<Redirect method="POST">${redirectUrl}</Redirect>`;
-    }
+/**
+ * Render Hebrew speech using the centralized text-to-speech defaults.
+ * @param {string} text - Message to speak
+ * @param {Object} attributes - Optional TeXML Say attributes
+ */
+function texmlSay(text, attributes = {}) {
+    const sayAttributes = {
+        ...HEBREW_SAY_DEFAULTS,
+        ...attributes
+    };
 
-    xml += '</Response>';
-    return xml;
+    return `<Say${serializeAttributes(sayAttributes)}>${escapeXml(text)}</Say>`;
+}
+
+/**
+ * Render a dial operation with a destination number.
+ * @param {string} number - Destination phone number
+ * @param {Object} attributes - TeXML Dial attributes
+ * @param {Object} numberAttributes - TeXML Number attributes
+ */
+function texmlDial(number, attributes = {}, numberAttributes = {}) {
+    return `<Dial${serializeAttributes(attributes)}>`
+        + `<Number${serializeAttributes(numberAttributes)}>${escapeXml(number)}</Number>`
+        + '</Dial>';
+}
+
+/**
+ * Render a DTMF gather operation with an optional spoken prompt.
+ * @param {string|null} prompt - Prompt to speak inside Gather
+ * @param {Object} attributes - TeXML Gather attributes
+ * @param {Object} sayAttributes - Optional prompt Say attributes
+ */
+function texmlGather(prompt, attributes = {}, sayAttributes = {}) {
+    const promptVerb = prompt === undefined || prompt === null
+        ? ''
+        : texmlSay(prompt, sayAttributes);
+
+    return `<Gather${serializeAttributes(attributes)}>${promptVerb}</Gather>`;
+}
+
+function texmlHangup() {
+    return '<Hangup/>';
 }
 
 /**
@@ -238,6 +275,12 @@ module.exports = {
     getCall,
     recordCall,
     formatPhoneNumber,
-    generateIVRXml,
+    HEBREW_SAY_DEFAULTS,
+    escapeXml,
+    texmlResponse,
+    texmlSay,
+    texmlDial,
+    texmlGather,
+    texmlHangup,
     handleIncomingWebhook
 };
