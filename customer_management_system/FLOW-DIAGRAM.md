@@ -1,102 +1,44 @@
-# 📞 IVR & WhatsApp Bot - Flow Diagram
+# Communications Flow History And Target Direction
 
----
+## Status
 
-## Phone Call Flow
+This directory originally described a phone-to-WhatsApp automation prototype.
+That automated flow is not active now. It is retained here as product context
+so the intended customer journey is not lost during provider migration.
 
-```
-                         📞 Incoming Call
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   Office Open?      │
-                    └─────────────────────┘
-                               │
-              ┌────────────────┴────────────────┐
-              │                                 │
-           ✅ YES                            ❌ NO
-              │                                 │
-              ▼                                 ▼
-    ┌───────────────────┐             ┌───────────────────┐
-    │ 📱 Send WhatsApp  │             │  "We're closed"   │
-    │   (website link)  │             │                   │
-    │         +         │             │  📱 Send WhatsApp │
-    │ 📞 Forward to Rep │             │   (start bot)     │
-    └─────────┬─────────┘             └───────────────────┘
-              │
-              ▼
-       ┌─────────────┐
-       │ Rep answered?│
-       └──────┬──────┘
-              │
-       ┌──────┴──────┐
-       │             │
-      ✅            ❌
-       │             │
-       ▼             ▼
-     Done    ┌─────────────────┐
-             │ 📱 Send WhatsApp│
-             │   (start bot)   │
-             └─────────────────┘
+## Current Implemented Flow
+
+```mermaid
+flowchart TD
+    Site[Clinic React Site] -->|POST /api/inquiries| Inquiry[(PostgreSQL Inquiry)]
+    Inquiry --> Admin[Admin inquiry screen]
+    Site -->|temporary backup call| PHP[PHP CSV and email endpoint]
+    Outbound[POST /api/calls/outgoing] --> Telnyx[Telnyx outbound voice]
+    Voice[Inbound voice webhooks] --> Disabled[501 while TeXML migration is in progress]
+    WA[WhatsApp API paths] --> Deferred[501 pending future Meta implementation]
 ```
 
----
+## Preserved Product Intention
 
-## WhatsApp Bot Flow
+The original concept was:
 
-```
-        📱 WhatsApp Message Received
-                    │
-                    ▼
-         ┌─────────────────────┐
-         │  "שלום! 👋          │
-         │   Click to start"   │
-         └──────────┬──────────┘
-                    │
-                    ▼
-         ┌─────────────────────┐
-         │   What would you    │
-         │   like to do?       │
-         │                     │
-         │  [1] Office Info    │
-         │  [2] Leave Message  │
-         │  [3] Website Link   │
-         └──────────┬──────────┘
-                    │
-        ┌───────────┼───────────┐
-        │           │           │
-       [1]         [2]         [3]
-        │           │           │
-        ▼           ▼           ▼
-┌─────────────┐ ┌─────────┐ ┌─────────────┐
-│ 🏢 Working  │ │ 📝 Enter│ │ 🌐 Website  │
-│    Hours    │ │  your   │ │    Link     │
-│             │ │ message │ │             │
-│ [Back][Msg] │ └────┬────┘ │ [New chat]  │
-└─────────────┘      │      └─────────────┘
-                     ▼
-             ┌─────────────┐
-             │ 💾 Saved to │
-             │ Google Sheet│
-             └──────┬──────┘
-                    │
-                    ▼
-             ┌─────────────┐
-             │ ✅ Thank you│
-             │             │
-             │ [New chat]  │
-             └─────────────┘
-```
+- Decide whether the office is open for an incoming caller.
+- Forward open-hours calls to a representative.
+- Offer an asynchronous follow-up option when the clinic is closed or the
+  representative cannot answer.
+- Capture and expose follow-up requests for clinic staff.
 
----
+The active migration plan in
+`../server/docs/TELNYX_TEXML_IVR_IMPLEMENTATION_PLAN.md` refines that intent:
 
-## Quick Reference
+- Telnyx TeXML will provide the future inbound voice flow.
+- Closed/no-answer callers may press `9`.
+- During the first voice rollout, key `9` is planned to trigger an internal
+  email notification for validation, not send a WhatsApp message.
+- A later Meta WhatsApp implementation may replace that temporary side effect.
 
-| Trigger | Action |
-|---------|--------|
-| Call when **open** | Forward to rep + WhatsApp (website link) |
-| Call when **closed** | WhatsApp (start bot) |
-| Rep **no answer** | WhatsApp (start bot) |
-| WhatsApp **"1"** | Show office hours |
-| WhatsApp **"2"** | Collect message → save |
-| WhatsApp **"3"** | Send website link |
+## Superseded Prototype Concept
+
+Earlier drafts envisioned an automatic WhatsApp bot with office-info, message,
+and website-link menu options. Do not configure or test that from the current
+application; the current `/api/whatsapp/*` routes are deliberately disabled.

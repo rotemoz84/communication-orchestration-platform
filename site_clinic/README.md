@@ -1,73 +1,61 @@
-# React + TypeScript + Vite
+# Clinic Website
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The public Dr. Yuval Oz site is a React/Vite single-page application. It is
+Hebrew-first and uses hash routing so it can be deployed as static files
+without server rewrite configuration.
 
-Currently, two official plugins are available:
+## Routes
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- `#/` - landing page and lead form
+- `#/privacy-policy` - privacy policy rendered from `src/translations/texts.ts`
+- `#/articles/:id` - article page support; the articles section is currently
+  hidden on the landing page
 
-## React Compiler
+## Development
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
+npm run build
+npm run lint
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Lead Submission Flow
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+The contact form in `src/components/ContactForm.tsx` collects a phone number
+or email address, optional service/message fields, privacy consent, and
+separate consent when a pregnancy week is entered.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+It posts first to:
+
+```text
+https://api.drozyuval.com/api/inquiries
 ```
+
+There is also a PHP submission endpoint at `src/contact.php`, deployed as
+`https://drozyuval.com/contact.php`. It logs submissions to CSV and sends an
+email through PHP hosting configuration.
+
+Important current behavior: the React form calls the PHP endpoint even after a
+successful main API response as a temporary email backup. This can create two
+records/notifications for one submission; do not remove or change that
+behavior without deciding how inquiry notification delivery should work.
+
+## Product And Design Intent
+
+The site intentionally moved away from an on-site multi-step booking widget to
+a lower-friction lead collection flow:
+
+- Desktop layout keeps a contact form visible in a sticky sidebar.
+- Mobile layout places the same form inline with the clinic content.
+- The main content presents the physician, specialties, and professional
+  experience in a clean medical visual style.
+- The application currently captures interest for personal follow-up; the
+  backend booking API is separate from this public-site form.
+
+## Active Privacy Surface
+
+The user-visible policy and consent copy live in
+`src/components/PrivacyPolicy.tsx` and `src/translations/texts.ts`. Legal or
+retention claims in those files should be reviewed with the clinic before
+production changes.
