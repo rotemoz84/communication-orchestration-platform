@@ -271,8 +271,8 @@ test('booking reservation creates an event only for an available time slot', asy
     assert.equal(createdBookings.length, 1);
 });
 
-test('voice and WhatsApp entry points remain disabled during provider migration', async () => {
-    const voice = await request('/api/voice/incoming', {
+test('pending voice callbacks and WhatsApp entry points remain disabled during migration', async () => {
+    const voice = await request('/api/voice/status', {
         method: 'POST',
         body: JSON.stringify({ from: '+972501234567' })
     });

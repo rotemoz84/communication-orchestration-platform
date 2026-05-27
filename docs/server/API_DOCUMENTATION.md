@@ -88,13 +88,16 @@ protection.
 | `POST` | `/calls/outgoing` | Initiate a Telnyx outbound call |
 
 `POST /calls/outgoing` accepts `{ "to": "+972...", "notes": "..." }`
-and requires Telnyx configuration. The persistence layer still contains legacy
-provider-specific call identifier names; the TeXML migration plan tracks their
-replacement.
+and requires Telnyx configuration. Call records use the provider-neutral
+`providerCallId` field for external voice-provider call identifiers.
 
-Inbound voice migration is underway. Every `POST` voice webhook route under
-`/voice` (`/incoming`, `/dial-callback`, `/closed-menu`, `/no-answer-menu`,
-`/outgoing-status`, and `/status`) currently returns `501`.
+`POST /voice/incoming` is the active Telnyx TeXML inbound entry point. It
+records the incoming call, returns representative dialing TeXML during open
+hours, and returns the closed-hours Hebrew menu TeXML otherwise.
+
+Inbound voice migration is still underway for downstream callbacks.
+`POST /voice/dial-callback`, `/voice/closed-menu`, `/voice/no-answer-menu`,
+`/voice/outgoing-status`, and `/voice/status` currently return `501`.
 
 WhatsApp is intentionally deferred to a future Meta implementation. Existing
 paths under `/whatsapp` such as `/send`, `/incoming`, `/status`, and `/test`

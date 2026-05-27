@@ -1,12 +1,23 @@
 /**
  * Voice webhook and IVR control routes.
  *
- * Voice webhooks are deliberately unavailable until the Telnyx TeXML flow is
- * implemented. Keeping explicit endpoints prevents an old provider flow from
- * being used accidentally during the migration.
+ * The incoming TeXML entry point is active. Downstream voice callbacks remain
+ * unavailable until their Telnyx flows are implemented.
  */
 
 const express = require('express');
+const { config } = require('../config');
+const { DEFAULTS } = require('../constants');
+const callRepository = require('../dal/repositories/callRepository');
+const {
+    normalizeTeXMLWebhook,
+    texmlDial,
+    texmlGather,
+    texmlHangup,
+    texmlResponse,
+    texmlSay
+} = require('../integrations/telnyx/voice');
+const { getMessage } = require('./messages');
 const {
     addToQueue,
     getIvrSettings,
@@ -21,7 +32,6 @@ const {
 const router = express.Router();
 
 const VOICE_WEBHOOK_PATHS = [
-    '/incoming',
     '/dial-callback',
     '/closed-menu',
     '/no-answer-menu',
@@ -36,6 +46,59 @@ function voiceMigrationPending(req, res) {
         phase: 'texml-migration'
     });
 }
+
+/**
+ * Main Telnyx TeXML entry point for inbound calls.
+ * POST /api/voice/incoming
+ */
+router.post('/incoming', async (req, res) => {
+    const webhook = normalizeTeXMLWebhook(req.body);
+    const callerNumber = webhook.from || 'unknown';
+
+    try {
+        const officeOpen = await isOfficeOpen();
+
+        const trackedCall = await callRepository.create({
+            callerNumber,
+            officeStatus: officeOpen ? 'open' : 'closed',
+            outcome: 'incoming',
+            providerCallId: webhook.providerCallId
+        });
+
+        if (!trackedCall) {
+            console.error('Failed to track incoming call');
+        }
+
+        if (officeOpen) {
+            return res.type('text/xml').send(texmlResponse(texmlDial(
+                config.repPhoneNumber,
+                {
+                    action: '/api/voice/dial-callback',
+                    method: 'POST',
+                    timeout: DEFAULTS.DIAL_TIMEOUT,
+                    callerId: webhook.to
+                }
+            )));
+        }
+
+        return res.type('text/xml').send(texmlResponse(
+            texmlGather(getMessage('IVR_no_answer'), {
+                action: '/api/voice/closed-menu',
+                method: 'POST',
+                timeout: 15,
+                numDigits: 1
+            }),
+            texmlSay(getMessage('IVR_goodbye')),
+            texmlHangup()
+        ));
+    } catch (error) {
+        console.error('Error handling incoming voice call:', error.message);
+        return res.type('text/xml').send(texmlResponse(
+            texmlSay(getMessage('IVR_error')),
+            texmlHangup()
+        ));
+    }
+});
 
 VOICE_WEBHOOK_PATHS.forEach(path => {
     router.post(path, voiceMigrationPending);
