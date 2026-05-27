@@ -49,10 +49,9 @@ async function createTables() {
                 CREATE TYPE call_outcome AS ENUM (
                     'incoming',
                     'answered',
-                    'no_answer_hangup',
-                    'no_answer_whatsapp',
-                    'closed_hours_whatsapp',
-                    'menu_whatsapp',
+                    'representative_unavailable',
+                    'representative_unavailable_followup_requested',
+                    'closed_hours_followup_requested',
                     'error'
                 );
             EXCEPTION
@@ -86,6 +85,33 @@ async function createTables() {
                 created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
             )
+        `);
+
+        // Add truthful outcome values without rebuilding an enum used by the active calls table.
+        await pool.query(`
+            ALTER TYPE call_outcome ADD VALUE IF NOT EXISTS 'representative_unavailable';
+        `);
+        await pool.query(`
+            ALTER TYPE call_outcome ADD VALUE IF NOT EXISTS 'representative_unavailable_followup_requested';
+        `);
+        await pool.query(`
+            ALTER TYPE call_outcome ADD VALUE IF NOT EXISTS 'closed_hours_followup_requested';
+        `);
+
+        // Preserve historical records while removing obsolete WhatsApp/hangup terminology.
+        await pool.query(`
+            UPDATE calls
+            SET outcome = CASE outcome::text
+                WHEN 'no_answer_hangup' THEN 'representative_unavailable'::call_outcome
+                WHEN 'no_answer_whatsapp' THEN 'representative_unavailable_followup_requested'::call_outcome
+                WHEN 'closed_hours_whatsapp' THEN 'closed_hours_followup_requested'::call_outcome
+                ELSE outcome
+            END
+            WHERE outcome::text IN (
+                'no_answer_hangup',
+                'no_answer_whatsapp',
+                'closed_hours_whatsapp'
+            );
         `);
 
         // Migration: upgrade legacy call columns while preserving provider IDs.

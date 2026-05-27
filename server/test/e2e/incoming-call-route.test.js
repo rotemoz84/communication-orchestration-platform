@@ -163,8 +163,8 @@ test('closed-hours incoming call can request follow-up through the interim notif
     assert.ok(notifications[0].timestamp instanceof Date);
     assert.deepEqual(updatedCalls, [{
         providerCallId: 'v3:incoming-closed',
-        outcome: 'closed_hours_whatsapp',
-        notes: 'Future WhatsApp follow-up requested (closed_hours); interim email sent.'
+        outcome: 'closed_hours_followup_requested',
+        notes: 'Follow-up requested (closed_hours); interim email sent.'
     }]);
     assert.match(selectedXml, /בקשתך התקבלה/);
     assert.doesNotMatch(selectedXml, /וואטסאפ/);
@@ -202,7 +202,7 @@ test('busy representative callback can request follow-up through the interim not
     assert.equal(response.status, 200);
     assert.deepEqual(updatedCalls, [{
         providerCallId: 'v3:incoming-busy',
-        outcome: 'no_answer_hangup',
+        outcome: 'representative_unavailable',
         duration: '6'
     }]);
     assert.match(xml, /<Gather action="\/api\/voice\/no-answer-menu" method="POST" timeout="15" numDigits="1">/);
@@ -223,12 +223,12 @@ test('busy representative callback can request follow-up through the interim not
     assert.equal(notifications[0].providerCallId, 'v3:incoming-busy');
     assert.deepEqual(updatedCalls, [{
         providerCallId: 'v3:incoming-busy',
-        outcome: 'no_answer_hangup',
+        outcome: 'representative_unavailable',
         duration: '6'
     }, {
         providerCallId: 'v3:incoming-busy',
-        outcome: 'no_answer_whatsapp',
-        notes: 'Future WhatsApp follow-up requested (no_answer); interim email sent.'
+        outcome: 'representative_unavailable_followup_requested',
+        notes: 'Follow-up requested (no_answer); interim email sent.'
     }]);
     assert.match(selectedXml, /בקשתך התקבלה/);
     assert.doesNotMatch(selectedXml, /וואטסאפ/);
@@ -272,8 +272,8 @@ test('follow-up request remains graceful when interim notification is unavailabl
     assert.equal(notifications.length, 1);
     assert.deepEqual(updatedCalls, [{
         providerCallId: 'v3:incoming-no-email',
-        outcome: 'closed_hours_whatsapp',
-        notes: 'Future WhatsApp follow-up requested (closed_hours); interim email unavailable: SMTP not configured.'
+        outcome: 'closed_hours_followup_requested',
+        notes: 'Follow-up requested (closed_hours); interim email unavailable: SMTP not configured.'
     }]);
     assert.match(xml, /בקשתך התקבלה/);
     assert.match(xml, /<Hangup\/>/);

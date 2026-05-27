@@ -112,7 +112,7 @@ router.post('/dial-callback', async (req, res) => {
                 {
                     outcome: representativeAnswered
                         ? CALL_OUTCOMES.ANSWERED
-                        : CALL_OUTCOMES.NO_ANSWER_HANGUP,
+                        : CALL_OUTCOMES.REPRESENTATIVE_UNAVAILABLE,
                     duration: webhook.duration
                 }
             );
@@ -172,8 +172,8 @@ function createFollowUpMenuHandler(reason, requestedOutcome) {
                 await callRepository.updateByProviderCallId(webhook.providerCallId, {
                     outcome: requestedOutcome,
                     notes: notification.success
-                        ? `Future WhatsApp follow-up requested (${reason}); interim email sent.`
-                        : `Future WhatsApp follow-up requested (${reason}); interim email unavailable: ${notification.error}.`
+                        ? `Follow-up requested (${reason}); interim email sent.`
+                        : `Follow-up requested (${reason}); interim email unavailable: ${notification.error}.`
                 });
             }
 
@@ -193,11 +193,11 @@ function createFollowUpMenuHandler(reason, requestedOutcome) {
 
 router.post(
     '/closed-menu',
-    createFollowUpMenuHandler('closed_hours', CALL_OUTCOMES.CLOSED_HOURS_WHATSAPP)
+    createFollowUpMenuHandler('closed_hours', CALL_OUTCOMES.CLOSED_HOURS_FOLLOWUP_REQUESTED)
 );
 router.post(
     '/no-answer-menu',
-    createFollowUpMenuHandler('no_answer', CALL_OUTCOMES.NO_ANSWER_WHATSAPP)
+    createFollowUpMenuHandler('no_answer', CALL_OUTCOMES.REPRESENTATIVE_UNAVAILABLE_FOLLOWUP_REQUESTED)
 );
 
 VOICE_WEBHOOK_PATHS.forEach(path => {

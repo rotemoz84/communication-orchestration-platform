@@ -7,10 +7,9 @@
 const CALL_OUTCOMES = {
     INCOMING: 'incoming',
     ANSWERED: 'answered',
-    NO_ANSWER_HANGUP: 'no_answer_hangup',
-    NO_ANSWER_WHATSAPP: 'no_answer_whatsapp',
-    CLOSED_HOURS_WHATSAPP: 'closed_hours_whatsapp',
-    MENU_WHATSAPP: 'menu_whatsapp',
+    REPRESENTATIVE_UNAVAILABLE: 'representative_unavailable',
+    REPRESENTATIVE_UNAVAILABLE_FOLLOWUP_REQUESTED: 'representative_unavailable_followup_requested',
+    CLOSED_HOURS_FOLLOWUP_REQUESTED: 'closed_hours_followup_requested',
     ERROR: 'error'
 };
 

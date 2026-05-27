@@ -18,7 +18,8 @@ before(async () => {
             async getStats() {
                 return {
                     total: 1,
-                    inbound_calls: 1
+                    inbound_calls: 1,
+                    followup_requested: 1
                 };
             }
         }
@@ -55,6 +56,7 @@ test('call history reporting remains available for inbound IVR calls', async () 
     assert.equal(response.status, 200);
     assert.equal(body.stats.total, 1);
     assert.equal(body.stats.inbound_calls, 1);
+    assert.equal(body.stats.followup_requested, 1);
 });
 
 test('standalone outbound call initiation is not exposed', async () => {

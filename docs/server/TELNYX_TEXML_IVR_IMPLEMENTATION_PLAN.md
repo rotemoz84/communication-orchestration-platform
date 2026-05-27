@@ -258,7 +258,7 @@ Work:
 - For open hours, return TeXML that dials `REP_PHONE_NUMBER` and supplies the
   dial callback route.
 - For closed hours, return TeXML that prompts the caller in Hebrew to press `9`
-  for WhatsApp and then ends the call if no input is received.
+  to request follow-up and then ends the call if no input is received.
 - The closed-hours digit `9` branch must invoke the interim email notification,
   with a `TODO(meta-whatsapp)` marking where it will later become an actual
   WhatsApp send; it must not call Twilio, Telnyx messaging, or Meta.
@@ -278,8 +278,9 @@ Work:
 - Convert `POST /api/voice/dial-callback` to TeXML/Telnyx input handling.
 - If the call reached the rep successfully, store the answered/completed
   outcome and return the minimal valid end-of-flow response.
-- If no answer, busy, failed, or canceled, store the appropriate outcome and
-  return a Hebrew menu offering key `9` for WhatsApp.
+- If no answer, busy, failed, or canceled, store
+  `representative_unavailable` and return a Hebrew menu offering key `9` for
+  follow-up.
 - Route the gather result to a menu endpoint while preserving whether the menu
   was triggered by closed hours or no-answer, if needed for tracking.
 
@@ -331,7 +332,7 @@ Work:
 - For digit `9`:
   - invoke the interim IVR email notification and track its result;
   - keep a clear `TODO(meta-whatsapp)` marking its future replacement;
-  - log/track that the future WhatsApp option was requested;
+  - track the follow-up request with a truthful outcome name;
   - play a truthful Hebrew message such as "Thank you, your request was
     received" that does **not** claim a WhatsApp message has been sent;
   - hang up.

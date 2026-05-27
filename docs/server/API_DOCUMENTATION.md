@@ -91,13 +91,14 @@ representative dialing TeXML during open hours, and returns the closed-hours
 Hebrew menu TeXML otherwise.
 
 `POST /voice/dial-callback` processes the result of dialing the representative.
-An answered call is recorded and ended; an unsuccessful dial is recorded and
-returns the Hebrew no-answer menu.
+An answered call is recorded and ended; an unsuccessful dial records
+`representative_unavailable` and returns the Hebrew no-answer menu.
 
 `POST /voice/closed-menu` and `/voice/no-answer-menu` process the caller's
-menu choice. Digit `9` records a future WhatsApp follow-up request and sends
-the temporary internal IVR notification email when it is configured; the
-spoken confirmation only states that the request was received.
+menu choice. Digit `9` records `closed_hours_followup_requested` or
+`representative_unavailable_followup_requested` and sends the temporary
+internal IVR notification email when it is configured; the spoken confirmation
+only states that the request was received.
 
 `POST /voice/status` remains disabled while no separate status-callback
 requirement exists for the inbound IVR journey.

@@ -254,8 +254,8 @@ async function getStats(startDate, endDate) {
             SELECT 
                 COUNT(*)::int as total,
                 SUM(CASE WHEN outcome = 'answered' THEN 1 ELSE 0 END)::int as answered,
-                SUM(CASE WHEN outcome LIKE '%no_answer%' THEN 1 ELSE 0 END)::int as no_answer,
-                SUM(CASE WHEN outcome LIKE '%whatsapp%' THEN 1 ELSE 0 END)::int as whatsapp_sent,
+                SUM(CASE WHEN outcome IN ('representative_unavailable', 'representative_unavailable_followup_requested') THEN 1 ELSE 0 END)::int as no_answer,
+                SUM(CASE WHEN outcome IN ('representative_unavailable_followup_requested', 'closed_hours_followup_requested') THEN 1 ELSE 0 END)::int as followup_requested,
                 SUM(CASE WHEN office_status = 'open' THEN 1 ELSE 0 END)::int as during_open,
                 SUM(CASE WHEN office_status = 'closed' THEN 1 ELSE 0 END)::int as during_closed,
                 SUM(CASE WHEN direction = 'inbound' THEN 1 ELSE 0 END)::int as inbound_calls,

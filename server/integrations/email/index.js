@@ -189,7 +189,7 @@ async function sendInquirySummaryEmail(inquiries, fromTimestamp, toTimestamp) {
 }
 
 /**
- * Send an internal notification when an IVR caller requests future WhatsApp follow-up.
+ * Send an internal notification when an IVR caller requests follow-up.
  * @param {Object} notification - IVR caller details
  * @param {string} notification.callerNumber - Incoming caller phone number
  * @param {string} notification.reason - closed_hours or no_answer
