@@ -1,7 +1,6 @@
 /**
  * Email Service
  * Sends email notifications using SMTP (a2hosting)
- * Only sends daily inquiry summary reports
  */
 
 const nodemailer = require('nodemailer');
@@ -189,8 +188,71 @@ async function sendInquirySummaryEmail(inquiries, fromTimestamp, toTimestamp) {
     }
 }
 
+/**
+ * Send an internal notification when an IVR caller requests future WhatsApp follow-up.
+ * @param {Object} notification - IVR caller details
+ * @param {string} notification.callerNumber - Incoming caller phone number
+ * @param {string} notification.reason - closed_hours or no_answer
+ * @param {string|null} notification.providerCallId - Provider-issued call ID
+ * @param {Date|string} notification.timestamp - Notification time
+ */
+async function sendIvrFallbackNotification({
+    callerNumber,
+    reason,
+    providerCallId = null,
+    timestamp = new Date()
+}) {
+    if (!transporter) {
+        transporter = initializeEmailTransporter();
+        if (!transporter) {
+            console.log('IVR fallback notification skipped: SMTP not configured');
+            return { success: false, error: 'SMTP not configured' };
+        }
+    }
+
+    const recipientEmail = process.env.IVR_FALLBACK_EMAIL_TO;
+    const senderEmail = process.env.EMAIL_FROM;
+
+    if (!recipientEmail || !senderEmail) {
+        console.warn('IVR fallback notification skipped: EMAIL_FROM or IVR_FALLBACK_EMAIL_TO not configured');
+        return { success: false, error: 'EMAIL_FROM or IVR_FALLBACK_EMAIL_TO not configured' };
+    }
+
+    const notificationTime = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    const timestampText = Number.isNaN(notificationTime.getTime())
+        ? new Date().toISOString()
+        : notificationTime.toISOString();
+    const subject = `IVR fallback request: ${reason || 'unknown'}`;
+    const text = [
+        'An IVR caller requested follow-up.',
+        '',
+        `Caller phone number: ${callerNumber || 'unknown'}`,
+        `Reason: ${reason || 'unknown'}`,
+        `Provider call ID: ${providerCallId || 'not available'}`,
+        `Timestamp: ${timestampText}`,
+        '',
+        'This internal email temporarily stands in for the future Meta WhatsApp starter message.'
+    ].join('\n');
+
+    try {
+        const info = await transporter.sendMail({
+            from: senderEmail,
+            to: recipientEmail,
+            subject,
+            text
+        });
+
+        console.log(`IVR fallback notification email sent: ${info.messageId}`);
+        return { success: true, messageId: info.messageId };
+    } catch (error) {
+        console.error('Failed to send IVR fallback notification:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
 module.exports = {
     initializeEmailTransporter,
     testEmailConnection,
-    sendInquirySummaryEmail
+    sendInquirySummaryEmail,
+    sendIvrFallbackNotification
 };
