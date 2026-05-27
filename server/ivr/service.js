@@ -10,7 +10,6 @@ const { config } = require('../config');
 let ivrSettings = {
     officeOpen: true,
     callForwarding: true,
-    whatsappFallback: true,
     recordingEnabled: true,
     customGreeting: null,
     emergencyMode: false,
@@ -110,7 +109,7 @@ async function getOfficeStatus() {
  */
 function updateIvrSettings(newSettings) {
     const allowedKeys = [
-        'officeOpen', 'callForwarding', 'whatsappFallback', 
+        'officeOpen', 'callForwarding',
         'recordingEnabled', 'customGreeting', 'emergencyMode',
         'queueEnabled', 'maxQueueSize'
     ];
@@ -231,13 +230,6 @@ function shouldUseCallForwarding() {
 }
 
 /**
- * Check if WhatsApp fallback should be used
- */
-function shouldUseWhatsAppFallback() {
-    return ivrSettings.whatsappFallback;
-}
-
-/**
  * Check if call recording should be enabled
  */
 function shouldRecordCalls() {
@@ -262,7 +254,6 @@ module.exports = {
     toggleEmergencyMode,
     getNextCaller,
     shouldUseCallForwarding,
-    shouldUseWhatsAppFallback,
     shouldRecordCalls,
     getCustomGreeting
 };

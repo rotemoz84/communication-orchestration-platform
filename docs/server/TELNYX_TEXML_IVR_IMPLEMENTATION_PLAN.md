@@ -14,8 +14,10 @@ Decisions already made:
 - Use the existing Google Sheet working-hours logic.
 - Use Hebrew text-to-speech via TeXML `<Say>` for the first version.
 - The rep mobile number will be provided later through `REP_PHONE_NUMBER`.
-- If the office is closed, offer WhatsApp only when the caller presses `9`.
-- If the rep does not answer, offer WhatsApp only when the caller presses `9`.
+- If the office is closed, offer a follow-up request when the caller presses
+  `9`.
+- If the rep does not answer, offer a follow-up request when the caller
+  presses `9`.
 - Do **not** implement WhatsApp now. For validation, pressing `9` sends an
   internal email notification through the existing SMTP integration. Future
   WhatsApp work will replace that notification side effect with Meta WhatsApp
@@ -35,8 +37,8 @@ flowchart TD
     Hours -->|Yes| Dial[Return TeXML Dial rep]
     Dial -->|Representative dial leg| Rep[Rep Mobile Phone]
     Rep -->|Answers| Connected[Connected Call]
-    Rep -->|No answer / busy / failed| NoAnswer[Offer press 9 for WhatsApp]
-    Hours -->|No| Closed[Offer press 9 for WhatsApp]
+    Rep -->|No answer / busy / failed| NoAnswer[Offer press 9 for follow-up]
+    Hours -->|No| Closed[Offer press 9 for follow-up]
     NoAnswer --> Menu[POST menu callback]
     Closed --> Menu
     Menu -->|Digit 9| Email[Send interim email notification]
@@ -67,7 +69,7 @@ In scope:
 - Inbound Telnyx TeXML IVR webhook responses.
 - Open-hours forwarding to the rep mobile number.
 - Closed-hours and no-answer phone prompts/menu handling.
-- Interim email notification when a caller selects the future WhatsApp option.
+- Interim email notification when a caller requests follow-up.
 - Provider-neutral call ID naming in active voice code.
 - Complete removal of Twilio code, configuration, dependencies, identifiers,
   obsolete test paths, and provider-specific setup guidance.
@@ -89,7 +91,7 @@ WhatsApp boundary during cleanup:
   not-implemented/disabled response pointing to the future Meta phase.
 - Provider-agnostic bot conversation logic may be retained only after it is
   moved out of any Twilio-named module or directory.
-- The only side effect behind the IVR WhatsApp option in this phase is an
+- The only side effect behind the IVR follow-up request in this phase is an
   internal SMTP email for flow validation; it is not a patient-facing message.
 
 ## External Setup Needed Later
@@ -361,6 +363,9 @@ a concrete status event that must be recorded separately.
 
 Goal: make later live hookup straightforward in a fresh session.
 
+Status: completed locally. Active server configuration documents Telnyx TeXML
+voice and interim email only; Meta WhatsApp remains a deferred future phase.
+
 Work:
 
 - Update `.env.example` voice guidance around:
@@ -397,6 +402,9 @@ Checks:
 
 Goal: finish implementation readiness before real phone setup.
 
+Status: completed locally through endpoint-flow tests. Live Telnyx phone and
+forwarding validation remains Step 12.
+
 Work:
 
 - Start the server in a local/test configuration.
@@ -415,7 +423,7 @@ Required cases:
 | Rep does not answer | TeXML offers key `9`, no WhatsApp send |
 | Caller presses `9` | Interim email sent, TODO retained, truthful audio, hangup |
 | Invalid/no input | Goodbye and hangup |
-| Status callback | Call updated by provider call ID |
+| Status callback | Explicit disabled/not-implemented response while Step 9 is skipped |
 | WhatsApp route called before Meta phase | Explicit disabled/not-implemented response |
 | Application startup | No Twilio package or configuration required |
 

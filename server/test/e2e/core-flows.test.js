@@ -159,6 +159,7 @@ before(async () => {
     app.use('/api/booking', bookingRoutes);
     app.use('/api/inquiries', inquiryRoutes);
     app.use('/api/voice', ivrRoutes);
+    app.use('/api/ivr', ivrRoutes);
     app.use('/api/whatsapp', whatsappRoutes);
     app.use((error, req, res, next) => {
         res.status(error.status || 500).json({ error: error.message });
@@ -285,4 +286,16 @@ test('pending voice callbacks and WhatsApp entry points remain disabled during m
     });
     assert.equal(whatsapp.response.status, 501);
     assert.equal(whatsapp.body.phase, 'deferred');
+});
+
+test('IVR settings do not expose the deferred WhatsApp fallback switch', async () => {
+    const update = await request('/api/ivr/settings', {
+        method: 'POST',
+        body: JSON.stringify({
+            whatsappFallback: true
+        })
+    });
+
+    assert.equal(update.response.status, 200);
+    assert.equal(Object.hasOwn(update.body.settings, 'whatsappFallback'), false);
 });
