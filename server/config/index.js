@@ -32,15 +32,6 @@ const config = {
         calendarId: process.env.GOOGLE_CALENDAR_ID
     },
     
-    // Telnyx
-    telnyx: {
-        apiKey: process.env.TELNYX_API_KEY,
-        phoneNumber: process.env.TELNYX_PHONE_NUMBER,
-        whatsappNumber: process.env.TELNYX_WHATSAPP_NUMBER,
-        connectionId: process.env.TELNYX_CONNECTION_ID,
-        messagingProfileId: process.env.TELNYX_MESSAGING_PROFILE_ID,
-        webhookUrl: process.env.TELNYX_WEBHOOK_URL
-    },
     // Business
     repPhoneNumber: process.env.REP_PHONE_NUMBER || '+972500000000',
     
@@ -96,13 +87,6 @@ function validateConfig() {
 }
 
 /**
- * Check if Telnyx is configured
- */
-function isTelnyxConfigured() {
-    return !!(config.telnyx.apiKey && config.telnyx.phoneNumber);
-}
-
-/**
  * Check if database is configured
  */
 function isDatabaseConfigured() {
@@ -112,6 +96,5 @@ function isDatabaseConfigured() {
 module.exports = {
     config,
     validateConfig,
-    isTelnyxConfigured,
     isDatabaseConfigured
 };

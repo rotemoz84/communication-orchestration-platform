@@ -33,7 +33,6 @@ const {
 const router = express.Router();
 
 const VOICE_WEBHOOK_PATHS = [
-    '/outgoing-status',
     '/status'
 ];
 

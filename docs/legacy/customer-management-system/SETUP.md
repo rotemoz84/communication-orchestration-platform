@@ -17,10 +17,9 @@ The server uses:
 - Google Sheets for working hours, meeting types, and general booking settings.
 - Google Calendar for busy-time lookup and event creation.
 - PostgreSQL for public inquiries and admin authentication.
-- Telnyx for existing outbound call initiation.
+- Telnyx TeXML for the inbound IVR flow.
 
-Inbound voice TeXML is currently in migration, and WhatsApp API routes are
-disabled pending a later Meta implementation.
+WhatsApp API routes are disabled pending a later Meta implementation.
 
 ## Google Setup
 

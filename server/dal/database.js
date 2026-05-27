@@ -53,52 +53,20 @@ async function createTables() {
                     'no_answer_whatsapp',
                     'closed_hours_whatsapp',
                     'menu_whatsapp',
-                    'error',
-                    'outgoing_initiated',
-                    'outgoing_unknown',
-                    'outgoing_queued',
-                    'outgoing_ringing',
-                    'outgoing_answered',
-                    'outgoing_completed',
-                    'outgoing_busy',
-                    'outgoing_no_answer',
-                    'outgoing_failed',
-                    'outgoing_canceled'
+                    'error'
                 );
             EXCEPTION
                 WHEN duplicate_object THEN null;
             END $$;
         `);
 
-        // Migration: support all outgoing call outcomes used by voice tracking.
-        const outgoingOutcomes = [
-            'outgoing_initiated',
-            'outgoing_unknown',
-            'outgoing_queued',
-            'outgoing_ringing',
-            'outgoing_answered',
-            'outgoing_completed',
-            'outgoing_busy',
-            'outgoing_no_answer',
-            'outgoing_failed',
-            'outgoing_canceled'
-        ];
-        for (const outcome of outgoingOutcomes) {
-            await pool.query(`ALTER TYPE call_outcome ADD VALUE IF NOT EXISTS '${outcome}'`);
-        }
-
         // Create enum type for office status (if not exists)
         await pool.query(`
             DO $$ BEGIN
-                CREATE TYPE office_status AS ENUM ('open', 'closed', 'unknown', 'outgoing');
+                CREATE TYPE office_status AS ENUM ('open', 'closed', 'unknown');
             EXCEPTION
                 WHEN duplicate_object THEN null;
             END $$;
-        `);
-
-        // Migration: outgoing call records use an outgoing office status.
-        await pool.query(`
-            ALTER TYPE office_status ADD VALUE IF NOT EXISTS 'outgoing';
         `);
 
         // Calls table for tracking incoming calls

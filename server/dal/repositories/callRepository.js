@@ -4,7 +4,6 @@
  */
 
 const { query } = require('../database');
-const { config } = require('../../config');
 const crypto = require('crypto');
 
 /**
@@ -168,60 +167,6 @@ async function updateByProviderCallId(providerCallId, updateData) {
 }
 
 /**
- * Update a call record by the application's tracking ID.
- * @param {string} callId - Internal call tracking identifier
- * @param {Object} updateData - Data to update
- */
-async function updateByCallId(callId, updateData) {
-    try {
-        const { outcome, duration, notes, providerCallId } = updateData;
-        const updates = [];
-        const params = [];
-        let paramIndex = 1;
-
-        if (outcome) {
-            updates.push(`outcome = $${paramIndex}`);
-            params.push(outcome);
-            paramIndex++;
-        }
-        if (duration !== undefined) {
-            updates.push(`duration = $${paramIndex}`);
-            params.push(parseInt(duration) || null);
-            paramIndex++;
-        }
-        if (notes) {
-            updates.push(`notes = $${paramIndex}`);
-            params.push(notes);
-            paramIndex++;
-        }
-        if (providerCallId) {
-            updates.push(`provider_call_id = $${paramIndex}`);
-            params.push(providerCallId);
-            paramIndex++;
-        }
-
-        if (updates.length === 0) {
-            return null;
-        }
-
-        const sql = `
-            UPDATE calls
-            SET ${updates.join(', ')}
-            WHERE call_id = $${paramIndex}
-            RETURNING *
-        `;
-
-        params.push(callId);
-        const result = await query(sql, params);
-
-        return result.length > 0 ? mapRowToCall(result[0]) : null;
-    } catch (error) {
-        console.error('Error updating call record by call ID:', error.message);
-        return null;
-    }
-}
-
-/**
  * Find call records with filters
  * @param {Object} filters - Query filters
  */
@@ -299,36 +244,6 @@ async function findById(callId) {
 }
 
 /**
- * Create an outgoing call record
- * @param {Object} callData - Outgoing call information
- * @returns {Object} - Created call record
- */
-async function createOutgoing(callData) {
-    try {
-        const { 
-            calleeNumber, 
-            callerNumber = config.repPhoneNumber,
-            outcome = 'outgoing_initiated', 
-            providerCallId = null,
-            notes = null
-        } = callData;
-
-        return await create({
-            callerNumber,
-            calleeNumber,
-            officeStatus: 'outgoing',
-            outcome,
-            providerCallId,
-            notes,
-            direction: 'outbound'
-        });
-    } catch (error) {
-        console.error('Error creating outgoing call record:', error.message);
-        return null;
-    }
-}
-
-/**
  * Get aggregated statistics for a date range
  * @param {string} startDate - Start date (YYYY-MM-DD)
  * @param {string} endDate - End date (YYYY-MM-DD)
@@ -344,7 +259,6 @@ async function getStats(startDate, endDate) {
                 SUM(CASE WHEN office_status = 'open' THEN 1 ELSE 0 END)::int as during_open,
                 SUM(CASE WHEN office_status = 'closed' THEN 1 ELSE 0 END)::int as during_closed,
                 SUM(CASE WHEN direction = 'inbound' THEN 1 ELSE 0 END)::int as inbound_calls,
-                SUM(CASE WHEN direction = 'outbound' THEN 1 ELSE 0 END)::int as outbound_calls,
                 ROUND(AVG(CASE WHEN duration > 0 THEN duration ELSE NULL END)::numeric, 2) as avg_duration
             FROM calls
             WHERE timestamp >= $1 AND timestamp <= $2
@@ -440,10 +354,8 @@ function mapRowToCall(row) {
 module.exports = {
     generateCallId,
     create,
-    createOutgoing,
     updateByCallerNumber,
     updateByProviderCallId,
-    updateByCallId,
     find,
     findById,
     getStats,

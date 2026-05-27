@@ -33,7 +33,7 @@ flowchart TD
     TelnyxNumber -->|POST /api/voice/incoming| IVR[Backend IVR - TeXML]
     IVR --> Hours{Office open?}
     Hours -->|Yes| Dial[Return TeXML Dial rep]
-    Dial -->|Telnyx outbound call leg| Rep[Rep Mobile Phone]
+    Dial -->|Representative dial leg| Rep[Rep Mobile Phone]
     Rep -->|Answers| Connected[Connected Call]
     Rep -->|No answer / busy / failed| NoAnswer[Offer press 9 for WhatsApp]
     Hours -->|No| Closed[Offer press 9 for WhatsApp]
@@ -46,28 +46,19 @@ flowchart TD
 
 ## Current Repository State
 
-The implementation is partially migrated and must not be assumed to be Telnyx
-ready:
+The inbound Telnyx TeXML flow is active through the menu-selection branch:
 
-- `server/ivr/routes.js` actively uses Twilio `VoiceResponse`, Twilio webhook
-  field names, and Twilio WhatsApp sending.
-- `server/routes/calls.js` already initiates outbound calls through the Telnyx
-  integration.
-- `server/integrations/telnyx/voice.js` exists, but its XML helper is incomplete
-  for the current inbound IVR flow and is not used by `server/ivr/routes.js`.
-- `server/routes/whatsapp.js` remains Twilio-shaped for inbound bot messages,
-  even though it attempts Telnyx for outgoing sends. WhatsApp functionality is
-  out of scope, but its Twilio dependency must be removed or disabled.
-- `server/integrations/email/index.js` already configures SMTP through
-  Nodemailer for daily inquiry summaries and can be extended for the interim
-  IVR branch notification.
-- Call persistence exposes Twilio-specific identifiers
-  (`twilio_call_sid`, `updateByTwilioSid`) while Telnyx code already stores
-  Telnyx call IDs through those names.
-- The database call outcome enum does not include the outgoing statuses already
-  used by current call route code.
-- Twilio configuration, SDK dependency, integration modules, setup guides, and
-  pre-release scripts remain in the repository and need removal or replacement.
+- `server/ivr/routes.js` handles inbound calls, representative dial callbacks,
+  and key-`9` follow-up selection using TeXML.
+- `server/integrations/telnyx/voice.js` provides TeXML helpers and normalizes
+  TeXML callback fields; it does not initiate standalone calls.
+- `server/integrations/email/index.js` sends the temporary internal follow-up
+  notification while Meta WhatsApp remains deferred.
+- Call persistence exposes provider-neutral call identifiers through
+  `provider_call_id` / `providerCallId`.
+- The standalone admin/system outbound-call endpoint was removed because the
+  product flow only requires patients calling into the IVR.
+- WhatsApp endpoints remain explicitly disabled pending the later Meta phase.
 
 ## Scope
 
@@ -77,7 +68,6 @@ In scope:
 - Open-hours forwarding to the rep mobile number.
 - Closed-hours and no-answer phone prompts/menu handling.
 - Interim email notification when a caller selects the future WhatsApp option.
-- Telnyx voice status/call tracking compatibility.
 - Provider-neutral call ID naming in active voice code.
 - Complete removal of Twilio code, configuration, dependencies, identifiers,
   obsolete test paths, and provider-specific setup guidance.
@@ -115,31 +105,24 @@ phone testing, configure:
    POST {BASE_URL}/api/voice/incoming
    ```
 
-4. Configure the voice status webhook:
-
-   ```text
-   POST {BASE_URL}/api/voice/status
-   ```
-
-5. Assign the Telnyx number to the TeXML Application.
-6. Configure outbound voice permissions/profile needed for `<Dial>` to the rep
+4. Assign the Telnyx number to the TeXML Application.
+5. Configure dialing permissions needed for the IVR `<Dial>` leg to the rep
    mobile number.
-7. Configure the existing clinic phone provider to forward incoming calls to
+6. Configure the existing clinic phone provider to forward incoming calls to
    the Telnyx number.
-8. Verify the forwarding path preserves the patient's original caller ID.
+7. Verify the forwarding path preserves the patient's original caller ID.
 
 Values required for live testing:
 
 ```env
 BASE_URL=https://public-backend-domain.example
-TELNYX_PHONE_NUMBER=+...
 REP_PHONE_NUMBER=+...
 IVR_FALLBACK_EMAIL_TO=validation-recipient@example.com
 ```
 
-An API key and Telnyx connection/application identifiers may be required by
-existing outbound-call features, but an inbound TeXML webhook itself is driven
-by the Telnyx portal URL configuration and XML response.
+The inbound TeXML webhook is driven by Telnyx portal number/application
+configuration and the XML response; it does not need a Telnyx API key or Call
+Control connection ID in server configuration.
 
 ## Implementation Steps
 
@@ -251,16 +234,11 @@ Work:
   `providerCallId`; remove old `twilioCallSid` response aliases.
 - Ensure schema creation and migration are idempotent for fresh databases and
   existing databases with `twilio_call_sid`.
-- Fix the existing schema mismatch for outgoing status outcomes, either by
-  expanding the enum safely or replacing it with a compatible status strategy.
-- Resolve the existing `createOutgoing` dependency on `config.repPhoneNumber`
-  if that path is executed during tests.
 
 Checks:
 
 - Create an inbound call record with a Telnyx provider call ID.
-- Update it by provider call ID following a status callback.
-- Initiate or simulate existing outbound-call persistence without enum errors.
+- Update it by provider call ID following a dial or menu callback.
 - Confirm fresh schema uses `provider_call_id` and migration preserves values
   from existing `twilio_call_sid`.
 - Confirm no `twilio_call_sid`, `twilioCallSid`, or `updateByTwilioSid` remains
@@ -369,22 +347,14 @@ Checks:
 
 ### Step 9: Convert Voice Status Tracking
 
-Goal: accept Telnyx call status updates cleanly.
+Decision: skipped for the current inbound-only product scope.
 
-Work:
-
-- Convert `POST /api/voice/status` to normalize and process Telnyx callback
-  fields/events.
-- Log useful identifiers and status information without exposing secrets.
-- Update call outcome/duration by `providerCallId` where the status maps to an
-  existing business outcome.
-- Return `200 OK`; status callbacks do not need TeXML.
-
-Checks:
-
-- Simulate progressing/completed/failed status payloads.
-- Confirm persisted duration and outcome updates.
-- Confirm unrecognized status payloads are acknowledged without crashing.
+The active inbound journey already records its meaningful outcomes through
+`/incoming`, `/dial-callback`, `/closed-menu`, and `/no-answer-menu`.
+`POST /api/calls/outgoing`, the only clear consumer of a general status
+callback, has been removed because the clinic will not initiate calls through
+Telnyx. Keep `/api/voice/status` disabled unless live inbound testing identifies
+a concrete status event that must be recorded separately.
 
 ### Step 10: Update Configuration, Tests, And Documentation
 
@@ -396,8 +366,6 @@ Work:
 
   ```env
   BASE_URL=
-  TELNYX_PHONE_NUMBER=
-  TELNYX_CONNECTION_ID=
   REP_PHONE_NUMBER=
   IVR_FALLBACK_EMAIL_TO=
   ```
@@ -408,7 +376,7 @@ Work:
 - Document SMTP configuration as a temporary IVR-flow validation dependency,
   separate from later Meta WhatsApp configuration.
 - Update/create Telnyx TeXML setup instructions for number assignment, inbound
-  URL, status URL, outbound dialing permission, and clinic-number forwarding.
+  URL, representative dial permission, and clinic-number forwarding.
 - Replace or remove outdated Twilio phone/setup instructions in server and
   customer management documentation.
 - Update API documentation so deferred WhatsApp routes are clearly disabled and

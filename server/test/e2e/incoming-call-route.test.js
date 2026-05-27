@@ -42,8 +42,7 @@ async function voiceRequest(path, fields) {
 before(async () => {
     replaceModule(configPath, {
         config: {
-            repPhoneNumber: '+972509111111',
-            telnyx: {}
+            repPhoneNumber: '+972509111111'
         }
     });
     replaceModule(repositoryPath, {

@@ -13,8 +13,10 @@ flowchart TD
     Site[Clinic React Site] -->|POST /api/inquiries| Inquiry[(PostgreSQL Inquiry)]
     Inquiry --> Admin[Admin inquiry screen]
     Site -->|temporary backup call| PHP[PHP CSV and email endpoint]
-    Outbound[POST /api/calls/outgoing] --> Telnyx[Telnyx outbound voice]
-    Voice[Inbound voice webhooks] --> Disabled[501 while TeXML migration is in progress]
+    Patient[Patient calls clinic] --> Telnyx[Telnyx voice number]
+    Telnyx --> Voice[POST /api/voice/incoming TeXML IVR]
+    Voice --> Rep[Dial representative during open hours]
+    Voice --> Email[Interim follow-up email on key 9]
     WA[WhatsApp API paths] --> Deferred[501 pending future Meta implementation]
 ```
 
@@ -31,10 +33,10 @@ The original concept was:
 The active migration plan in
 `../../server/TELNYX_TEXML_IVR_IMPLEMENTATION_PLAN.md` refines that intent:
 
-- Telnyx TeXML will provide the future inbound voice flow.
+- Telnyx TeXML provides the inbound voice flow.
 - Closed/no-answer callers may press `9`.
-- During the first voice rollout, key `9` is planned to trigger an internal
-  email notification for validation, not send a WhatsApp message.
+- During the first voice rollout, key `9` triggers an internal email
+  notification for validation, not a WhatsApp message.
 - A later Meta WhatsApp implementation may replace that temporary side effect.
 
 ## Superseded Prototype Concept

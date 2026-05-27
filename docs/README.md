@@ -17,8 +17,8 @@ All maintained Markdown documentation is centralized in this directory.
   and migration boundaries.
 - [Admin site status](server/ADMIN_SITE_IMPLEMENTATION_PLAN.md) - current admin
   behavior and planned audit/SSO follow-up.
-- [Telnyx outbound setup](server/TELNYX_CONNECTION_GUIDE.md) - active outbound
-  Telnyx setup.
+- [Telnyx inbound IVR setup](server/TELNYX_CONNECTION_GUIDE.md) - live TeXML
+  number and webhook setup.
 - [Telnyx TeXML IVR plan](server/TELNYX_TEXML_IVR_IMPLEMENTATION_PLAN.md) -
   in-progress inbound voice migration plan.
 

@@ -20,7 +20,6 @@
     "googleapis": "^129.0.0",
     "node-schedule": "^2.1.1",
     "nodemailer": "^7.0.13",
-    "pg": "^8.11.3",
-    "telnyx": "^5.37.1"
+    "pg": "^8.11.3"
   }
 }

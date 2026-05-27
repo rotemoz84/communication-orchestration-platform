@@ -1,34 +1,54 @@
-# Telnyx Outbound Call Setup
+# Telnyx TeXML Inbound IVR Setup
 
-This note applies to the existing outbound-call endpoint,
-`POST /api/calls/outgoing`. Inbound IVR is not active yet; its TeXML rollout
-is tracked in `TELNYX_TEXML_IVR_IMPLEMENTATION_PLAN.md` in this directory.
+This guide applies to the patient inbound-call flow. The server does not
+initiate standalone outbound Telnyx calls.
 
-## Required Values
+## Server Values
 
-Create a Telnyx Call Control connection and assign an outbound-capable Telnyx
-number to it. Configure the server with:
+Configure the deployed server with:
 
 ```env
-TELNYX_API_KEY=KEY...
-TELNYX_PHONE_NUMBER=+...
-TELNYX_CONNECTION_ID=...
 BASE_URL=https://api.drozyuval.com
+REP_PHONE_NUMBER=+972500000000
+IVR_FALLBACK_EMAIL_TO=validation-recipient@example.com
 ```
 
-The Connection ID is available in the Telnyx Portal under **Voice** /
-**Call Control** / **Connections**. The server passes it when it creates an
-outbound call in `server/integrations/telnyx/voice.js`.
+The SMTP variables documented in `server/.env.example` are needed if key `9`
+should send the temporary internal validation email.
 
-## Check
+## Telnyx Portal Setup
 
-With the API and database configured, request an outbound call:
+1. Buy a Telnyx number with voice capability.
+2. Create a Telnyx TeXML Application.
+3. Configure its inbound Voice URL:
+
+   ```text
+   POST https://api.drozyuval.com/api/voice/incoming
+   ```
+
+4. Assign the number to the TeXML Application.
+5. Allow the TeXML `<Dial>` leg to call the representative number configured
+   as `REP_PHONE_NUMBER`.
+6. After direct testing passes, forward the existing clinic number to the
+   Telnyx number and verify the patient's caller ID is preserved.
+
+No Telnyx API key or Call Control connection ID is used by this inbound
+webhook implementation. WhatsApp remains deferred to a future Meta
+integration.
+
+## Manual Webhook Check
+
+After deploying the database migration and current server code, simulate an
+incoming Telnyx request:
 
 ```bash
-curl -X POST https://api.drozyuval.com/api/calls/outgoing \
-  -H "Content-Type: application/json" \
-  -d '{"to":"+972500000000","notes":"Outbound setup check"}'
+curl -X POST https://api.drozyuval.com/api/voice/incoming \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data-urlencode "CallSid=manual-test-001" \
+  --data-urlencode "From=+972501234567" \
+  --data-urlencode "To=+972509876543"
 ```
 
-Do not configure WhatsApp through Telnyx from this guide. WhatsApp endpoints
-are intentionally disabled until a later Meta WhatsApp implementation.
+The response is TeXML. Open hours return a `<Dial>` response; closed hours
+return a Hebrew follow-up menu. This request creates a call-history record in
+the deployed database.

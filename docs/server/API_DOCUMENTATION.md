@@ -72,11 +72,10 @@ returns `409` if a requested slot is no longer available.
 | `GET` | `/health` | Process health and configured timezone |
 | `POST` | `/sync/calendar` | Manually sync Google Calendar data to Sheets |
 
-## Calls And Migration Boundary
+## Call History
 
-`/calls` exposes call record listing, stats, detail, editing, and outbound
-Telnyx call initiation. These routes currently do not use admin session
-protection.
+`/calls` exposes the inbound IVR call record history and reporting endpoints.
+These routes currently do not use admin session protection.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
@@ -85,15 +84,11 @@ protection.
 | `GET` | `/calls/stats?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD` | Aggregate call statistics |
 | `GET` | `/calls/:id` | Read one call record |
 | `PATCH` | `/calls/:id` | Change notes or outcome |
-| `POST` | `/calls/outgoing` | Initiate a Telnyx outbound call |
-
-`POST /calls/outgoing` accepts `{ "to": "+972...", "notes": "..." }`
-and requires Telnyx configuration. Call records use the provider-neutral
-`providerCallId` field for external voice-provider call identifiers.
 
 `POST /voice/incoming` is the active Telnyx TeXML inbound entry point. It
-records the incoming call, returns representative dialing TeXML during open
-hours, and returns the closed-hours Hebrew menu TeXML otherwise.
+records the incoming call using the provider-neutral `providerCallId`, returns
+representative dialing TeXML during open hours, and returns the closed-hours
+Hebrew menu TeXML otherwise.
 
 `POST /voice/dial-callback` processes the result of dialing the representative.
 An answered call is recorded and ended; an unsuccessful dial is recorded and
@@ -104,8 +99,8 @@ menu choice. Digit `9` records a future WhatsApp follow-up request and sends
 the temporary internal IVR notification email when it is configured; the
 spoken confirmation only states that the request was received.
 
-Inbound voice migration is still underway for status callbacks.
-`POST /voice/outgoing-status` and `/voice/status` currently return `501`.
+`POST /voice/status` remains disabled while no separate status-callback
+requirement exists for the inbound IVR journey.
 
 WhatsApp is intentionally deferred to a future Meta implementation. Existing
 paths under `/whatsapp` such as `/send`, `/incoming`, `/status`, and `/test`
