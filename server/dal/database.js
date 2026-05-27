@@ -53,20 +53,52 @@ async function createTables() {
                     'no_answer_whatsapp',
                     'closed_hours_whatsapp',
                     'menu_whatsapp',
-                    'error'
+                    'error',
+                    'outgoing_initiated',
+                    'outgoing_unknown',
+                    'outgoing_queued',
+                    'outgoing_ringing',
+                    'outgoing_answered',
+                    'outgoing_completed',
+                    'outgoing_busy',
+                    'outgoing_no_answer',
+                    'outgoing_failed',
+                    'outgoing_canceled'
                 );
             EXCEPTION
                 WHEN duplicate_object THEN null;
             END $$;
         `);
 
+        // Migration: support all outgoing call outcomes used by voice tracking.
+        const outgoingOutcomes = [
+            'outgoing_initiated',
+            'outgoing_unknown',
+            'outgoing_queued',
+            'outgoing_ringing',
+            'outgoing_answered',
+            'outgoing_completed',
+            'outgoing_busy',
+            'outgoing_no_answer',
+            'outgoing_failed',
+            'outgoing_canceled'
+        ];
+        for (const outcome of outgoingOutcomes) {
+            await pool.query(`ALTER TYPE call_outcome ADD VALUE IF NOT EXISTS '${outcome}'`);
+        }
+
         // Create enum type for office status (if not exists)
         await pool.query(`
             DO $$ BEGIN
-                CREATE TYPE office_status AS ENUM ('open', 'closed', 'unknown');
+                CREATE TYPE office_status AS ENUM ('open', 'closed', 'unknown', 'outgoing');
             EXCEPTION
                 WHEN duplicate_object THEN null;
             END $$;
+        `);
+
+        // Migration: outgoing call records use an outgoing office status.
+        await pool.query(`
+            ALTER TYPE office_status ADD VALUE IF NOT EXISTS 'outgoing';
         `);
 
         // Calls table for tracking incoming calls
@@ -79,7 +111,7 @@ async function createTables() {
                 office_status office_status DEFAULT 'unknown',
                 outcome call_outcome DEFAULT 'incoming',
                 duration INTEGER DEFAULT NULL,
-                twilio_call_sid VARCHAR(50) DEFAULT NULL,
+                provider_call_id VARCHAR(255) DEFAULT NULL,
                 notes TEXT DEFAULT NULL,
                 direction VARCHAR(10) DEFAULT 'inbound',
                 callee_number VARCHAR(20) DEFAULT NULL,
@@ -88,11 +120,25 @@ async function createTables() {
             )
         `);
 
-        // Migration: add direction and callee_number if table existed from older schema
+        // Migration: upgrade legacy call columns while preserving provider IDs.
         await pool.query(`
             DO $$
             BEGIN
                 IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'calls') THEN
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'calls' AND column_name = 'twilio_call_sid')
+                        AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'calls' AND column_name = 'provider_call_id') THEN
+                        ALTER TABLE calls RENAME COLUMN twilio_call_sid TO provider_call_id;
+                    ELSIF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'calls' AND column_name = 'twilio_call_sid')
+                        AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'calls' AND column_name = 'provider_call_id') THEN
+                        UPDATE calls
+                        SET provider_call_id = COALESCE(provider_call_id, twilio_call_sid)
+                        WHERE twilio_call_sid IS NOT NULL;
+                        ALTER TABLE calls DROP COLUMN twilio_call_sid;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'calls' AND column_name = 'provider_call_id') THEN
+                        ALTER TABLE calls ADD COLUMN provider_call_id VARCHAR(255) DEFAULT NULL;
+                    END IF;
+                    ALTER TABLE calls ALTER COLUMN provider_call_id TYPE VARCHAR(255);
                     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'calls' AND column_name = 'direction') THEN
                         ALTER TABLE calls ADD COLUMN direction VARCHAR(10) DEFAULT 'inbound';
                     END IF;
@@ -111,6 +157,7 @@ async function createTables() {
             CREATE INDEX IF NOT EXISTS idx_calls_office_status ON calls(office_status);
             CREATE INDEX IF NOT EXISTS idx_calls_direction ON calls(direction);
             CREATE INDEX IF NOT EXISTS idx_calls_callee_number ON calls(callee_number);
+            CREATE INDEX IF NOT EXISTS idx_calls_provider_call_id ON calls(provider_call_id);
         `);
 
         // Create trigger function for updating updated_at

@@ -4,6 +4,7 @@
  */
 
 const { query } = require('../database');
+const { config } = require('../../config');
 const crypto = require('crypto');
 
 /**
@@ -26,19 +27,19 @@ async function create(callData) {
             callerNumber, 
             officeStatus = 'unknown', 
             outcome = 'incoming', 
-            twilioCallSid = null,
+            providerCallId = null,
             notes = null,
             direction = 'inbound',
             calleeNumber = null
         } = callData;
 
         const sql = `
-            INSERT INTO calls (call_id, caller_number, office_status, outcome, twilio_call_sid, notes, direction, callee_number)
+            INSERT INTO calls (call_id, caller_number, office_status, outcome, provider_call_id, notes, direction, callee_number)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING *
         `;
 
-        const result = await query(sql, [callId, callerNumber, officeStatus, outcome, twilioCallSid, notes, direction, calleeNumber]);
+        const result = await query(sql, [callId, callerNumber, officeStatus, outcome, providerCallId, notes, direction, calleeNumber]);
 
         console.log(`📊 Call tracked: ${callId} from ${callerNumber} (${direction}) - ${outcome}`);
         return mapRowToCall(result[0]);
@@ -112,11 +113,11 @@ async function updateByCallerNumber(callerNumber, updateData) {
 }
 
 /**
- * Update a call record by Twilio Call SID
- * @param {string} twilioCallSid - Twilio's call SID
+ * Update a call record by provider call ID.
+ * @param {string} providerCallId - Provider-issued call identifier
  * @param {Object} updateData - Data to update
  */
-async function updateByTwilioSid(twilioCallSid, updateData) {
+async function updateByProviderCallId(providerCallId, updateData) {
     try {
         const { outcome, duration, notes } = updateData;
         
@@ -147,21 +148,75 @@ async function updateByTwilioSid(twilioCallSid, updateData) {
         const sql = `
             UPDATE calls 
             SET ${updates.join(', ')}
-            WHERE twilio_call_sid = $${paramIndex}
+            WHERE provider_call_id = $${paramIndex}
             RETURNING *
         `;
         
-        params.push(twilioCallSid);
+        params.push(providerCallId);
         
         const result = await query(sql, params);
 
         if (result.length > 0) {
-            console.log(`📊 Call record updated for SID ${twilioCallSid}`);
+            console.log(`📊 Call record updated for provider ID ${providerCallId}`);
             return mapRowToCall(result[0]);
         }
         return null;
     } catch (error) {
-        console.error('Error updating call record by SID:', error.message);
+        console.error('Error updating call record by provider ID:', error.message);
+        return null;
+    }
+}
+
+/**
+ * Update a call record by the application's tracking ID.
+ * @param {string} callId - Internal call tracking identifier
+ * @param {Object} updateData - Data to update
+ */
+async function updateByCallId(callId, updateData) {
+    try {
+        const { outcome, duration, notes, providerCallId } = updateData;
+        const updates = [];
+        const params = [];
+        let paramIndex = 1;
+
+        if (outcome) {
+            updates.push(`outcome = $${paramIndex}`);
+            params.push(outcome);
+            paramIndex++;
+        }
+        if (duration !== undefined) {
+            updates.push(`duration = $${paramIndex}`);
+            params.push(parseInt(duration) || null);
+            paramIndex++;
+        }
+        if (notes) {
+            updates.push(`notes = $${paramIndex}`);
+            params.push(notes);
+            paramIndex++;
+        }
+        if (providerCallId) {
+            updates.push(`provider_call_id = $${paramIndex}`);
+            params.push(providerCallId);
+            paramIndex++;
+        }
+
+        if (updates.length === 0) {
+            return null;
+        }
+
+        const sql = `
+            UPDATE calls
+            SET ${updates.join(', ')}
+            WHERE call_id = $${paramIndex}
+            RETURNING *
+        `;
+
+        params.push(callId);
+        const result = await query(sql, params);
+
+        return result.length > 0 ? mapRowToCall(result[0]) : null;
+    } catch (error) {
+        console.error('Error updating call record by call ID:', error.message);
         return null;
     }
 }
@@ -254,7 +309,7 @@ async function createOutgoing(callData) {
             calleeNumber, 
             callerNumber = config.repPhoneNumber,
             outcome = 'outgoing_initiated', 
-            twilioCallSid = null,
+            providerCallId = null,
             notes = null
         } = callData;
 
@@ -263,7 +318,7 @@ async function createOutgoing(callData) {
             calleeNumber,
             officeStatus: 'outgoing',
             outcome,
-            twilioCallSid,
+            providerCallId,
             notes,
             direction: 'outbound'
         });
@@ -374,7 +429,7 @@ function mapRowToCall(row) {
         officeStatus: row.office_status,
         outcome: row.outcome,
         duration: row.duration,
-        twilioCallSid: row.twilio_call_sid,
+        providerCallId: row.provider_call_id,
         notes: row.notes,
         direction: row.direction,
         createdAt: row.created_at,
@@ -387,7 +442,8 @@ module.exports = {
     create,
     createOutgoing,
     updateByCallerNumber,
-    updateByTwilioSid,
+    updateByProviderCallId,
+    updateByCallId,
     find,
     findById,
     getStats,

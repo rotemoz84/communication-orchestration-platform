@@ -65,7 +65,7 @@ async function testTelnyxMigration() {
       if (call.data.success) {
         console.log('✅ Outgoing call initiated via Telnyx');
         console.log('   Call ID:', call.data.callId);
-        console.log('   Telnyx Call ID:', call.data.telnyxCallId);
+        console.log('   Provider Call ID:', call.data.providerCallId);
       } else {
         console.log('❌ Call test failed');
       }

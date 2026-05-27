@@ -65,7 +65,7 @@ async function testConnection() {
       } else {
         console.log('✅ Outgoing call initiated');
         console.log('   Call ID:', call.data.callId);
-        console.log('   Twilio SID:', call.data.twilioCallSid);
+        console.log('   Provider Call ID:', call.data.providerCallId);
       }
     } catch (error) {
       console.log('❌ Call test failed:', error.response?.data?.error || error.message);

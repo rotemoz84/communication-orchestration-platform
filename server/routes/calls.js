@@ -5,7 +5,6 @@
 
 const express = require('express');
 const router = express.Router();
-const { createOutgoing, updateByTwilioSid, findById, getStats, getRecentCalls } = require('../dal/repositories/callRepository');
 const { config, isTelnyxConfigured } = require('../config');
 const callRepository = require('../dal/repositories/callRepository');
 
@@ -52,20 +51,27 @@ router.post('/outgoing', async (req, res) => {
         });
         
         if (!telnyxCall.success) {
+            await callRepository.updateByCallId(callRecord.callId, {
+                outcome: 'outgoing_failed'
+            });
             return res.status(500).json({ error: telnyxCall.error });
         }
         
-        // Update call record with Telnyx call ID
-        await callRepository.updateByTwilioSid(telnyxCall.callId, {
-            outcome: 'outgoing_initiated'
+        // Attach the provider ID so subsequent Telnyx callbacks find this record.
+        const trackedCall = await callRepository.updateByCallId(callRecord.callId, {
+            providerCallId: telnyxCall.callId
         });
+
+        if (!trackedCall) {
+            return res.status(500).json({ error: 'Call started but its provider ID could not be saved' });
+        }
         
         console.log(`📞 Outgoing call initiated: ${callRecord.callId} to ${to}`);
         
         res.json({
             success: true,
             callId: callRecord.callId,
-            telnyxCallId: telnyxCall.callId,
+            providerCallId: telnyxCall.callId,
             status: 'initiated'
         });
         
