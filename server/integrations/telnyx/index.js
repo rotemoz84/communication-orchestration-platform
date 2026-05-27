@@ -1,6 +1,6 @@
 /**
  * Telnyx Integrations Index
- * Replaces Twilio with Telnyx for voice and messaging
+ * Telnyx voice and messaging integrations
  */
 
 const voice = require('./voice');

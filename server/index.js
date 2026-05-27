@@ -57,7 +57,7 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // For Twilio webhooks
+app.use(express.urlencoded({ extended: true })); // For webhook form payloads
 
 // ============================================
 // Route Prefix (for cPanel deployments)
@@ -90,13 +90,13 @@ app.get(BASE_PATH + '/api/health', (req, res) => {
 // Booking routes
 app.use(BASE_PATH + '/api/booking', bookingRoutes);
 
-// Voice/IVR routes (Twilio webhooks)
+// Voice/IVR routes
 app.use(BASE_PATH + '/api/voice', ivrRoutes);
 
 // IVR control routes
 app.use(BASE_PATH + '/api/ivr', ivrRoutes);
 
-// WhatsApp bot routes (Twilio webhooks)
+// WhatsApp routes (disabled pending Meta implementation)
 app.use(BASE_PATH + '/api/whatsapp', whatsappRoutes);
 
 // Call records API

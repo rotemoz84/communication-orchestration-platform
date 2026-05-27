@@ -32,7 +32,7 @@ const config = {
         calendarId: process.env.GOOGLE_CALENDAR_ID
     },
     
-    // Telnyx (replacing Twilio)
+    // Telnyx
     telnyx: {
         apiKey: process.env.TELNYX_API_KEY,
         phoneNumber: process.env.TELNYX_PHONE_NUMBER,
@@ -41,15 +41,6 @@ const config = {
         messagingProfileId: process.env.TELNYX_MESSAGING_PROFILE_ID,
         webhookUrl: process.env.TELNYX_WEBHOOK_URL
     },
-    
-    // Legacy Twilio (keep for backward compatibility during migration)
-    twilio: {
-        accountSid: process.env.TWILIO_ACCOUNT_SID,
-        authToken: process.env.TWILIO_AUTH_TOKEN,
-        whatsappNumber: process.env.TWILIO_WHATSAPP_NUMBER,
-        phoneNumber: process.env.TWILIO_PHONE_NUMBER
-    },
-    
     // Business
     repPhoneNumber: process.env.REP_PHONE_NUMBER || '+972500000000',
     
@@ -112,13 +103,6 @@ function isTelnyxConfigured() {
 }
 
 /**
- * Check if Twilio is configured (legacy)
- */
-function isTwilioConfigured() {
-    return !!(config.twilio.accountSid && config.twilio.authToken);
-}
-
-/**
  * Check if database is configured
  */
 function isDatabaseConfigured() {
@@ -129,6 +113,5 @@ module.exports = {
     config,
     validateConfig,
     isTelnyxConfigured,
-    isTwilioConfigured,
     isDatabaseConfigured
 };

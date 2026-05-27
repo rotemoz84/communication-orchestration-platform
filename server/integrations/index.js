@@ -4,9 +4,7 @@
  */
 
 const google = require('./google');
-const twilio = require('./twilio');
 
 module.exports = {
-    google,
-    twilio
+    google
 };
