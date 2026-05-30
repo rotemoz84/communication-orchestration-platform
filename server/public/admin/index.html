@@ -381,6 +381,46 @@
       var STATUS_LABELS = { new: 'חדש', contacted: 'נוצר קשר', scheduled: 'נקבע', closed: 'סגור' };
       function statusLabel(s) { return (s && STATUS_LABELS[s]) ? STATUS_LABELS[s] : (s || '—'); }
 
+      function appendTextCell(rowEl, value, className) {
+        var cell = document.createElement('td');
+        if (className) cell.className = className;
+        cell.textContent = value === undefined || value === null || value === '' ? '—' : String(value);
+        rowEl.appendChild(cell);
+        return cell;
+      }
+
+      function renderInquiryRows(tbody, items, dateOpt) {
+        tbody.textContent = '';
+        items.forEach(function (row) {
+          var rowEl = document.createElement('tr');
+          var dateStr = row.timestamp ? new Date(row.timestamp).toLocaleString('he-IL', dateOpt) : '—';
+          var fullMessage = row.message || '';
+          var messagePreview = fullMessage || '—';
+          if (fullMessage.length > 220) messagePreview = fullMessage.substring(0, 220) + '…';
+
+          appendTextCell(rowEl, dateStr);
+          appendTextCell(rowEl, row.name);
+          appendTextCell(rowEl, row.phone);
+          appendTextCell(rowEl, row.email);
+          appendTextCell(rowEl, row.service);
+          var messageCell = appendTextCell(rowEl, messagePreview, 'cell-message');
+          messageCell.title = fullMessage;
+          appendTextCell(rowEl, statusLabel(row.status));
+
+          var actionCell = document.createElement('td');
+          var editButton = document.createElement('button');
+          editButton.type = 'button';
+          editButton.className = 'secondary btn-edit';
+          editButton.dataset.id = row.inquiryId || '';
+          editButton.dataset.status = row.status || 'new';
+          editButton.dataset.notes = row.notes || '';
+          editButton.textContent = 'עריכה';
+          actionCell.appendChild(editButton);
+          rowEl.appendChild(actionCell);
+          tbody.appendChild(rowEl);
+        });
+      }
+
       function loadInquiries() {
         var wrap = getEl('inquiries-table-wrap');
         var loadingEl = getEl('inquiries-loading');
@@ -415,21 +455,7 @@
             var totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
             var dateOpt = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jerusalem' };
-            tbody.innerHTML = items.map(function (row) {
-              var dateStr = row.timestamp ? new Date(row.timestamp).toLocaleString('he-IL', dateOpt) : '—';
-              var msg = (row.message || '—').replace(/</g, '&lt;').substring(0, 220);
-              if ((row.message || '').length > 220) msg += '…';
-              return '<tr>' +
-                '<td>' + dateStr + '</td>' +
-                '<td>' + (row.name || '—') + '</td>' +
-                '<td>' + (row.phone || '—') + '</td>' +
-                '<td>' + (row.email || '—') + '</td>' +
-                '<td>' + (row.service || '—') + '</td>' +
-                '<td class="cell-message" title="' + (row.message || '').replace(/"/g, '&quot;') + '">' + msg + '</td>' +
-                '<td>' + statusLabel(row.status) + '</td>' +
-                '<td><button type="button" class="secondary btn-edit" data-id="' + (row.inquiryId || '') + '" data-status="' + (row.status || 'new') + '" data-notes="' + (row.notes || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;') + '">עריכה</button></td>' +
-                '</tr>';
-            }).join('');
+            renderInquiryRows(tbody, items, dateOpt);
 
             // Pagination: total, page numbers, prev/next
             var from = total === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
@@ -481,7 +507,7 @@
         var notes = btn.getAttribute('data-notes') || '';
         getEl('edit-inquiry-id').value = id;
         getEl('edit-status').value = status;
-        getEl('edit-notes').value = notes.replace(/&lt;/g, '<').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+        getEl('edit-notes').value = notes;
         show(getEl('edit-modal'));
       }
 
