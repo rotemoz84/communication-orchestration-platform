@@ -27,7 +27,7 @@ async function seed() {
 
     const existing = await adminUserRepository.findByEmail(email);
     if (existing) {
-        console.log('Admin user already exists:', email);
+        console.log('Admin user already exists');
         process.exit(0);
     }
 
@@ -38,7 +38,7 @@ async function seed() {
         displayName: email.split('@')[0]
     });
 
-    console.log('Admin user created:', email);
+    console.log('Admin user created');
     process.exit(0);
 }
 

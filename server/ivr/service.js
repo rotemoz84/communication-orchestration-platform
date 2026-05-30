@@ -153,7 +153,7 @@ function addToQueue(callerNumber, callId) {
     };
     
     ivrSettings.currentQueue.push(queueEntry);
-    console.log(`📞 Caller ${callerNumber} added to queue at position ${queueEntry.position}`);
+    console.log(`📞 Caller added to queue at position ${queueEntry.position}`);
     
     return { success: true, position: queueEntry.position };
 }
@@ -170,7 +170,7 @@ function removeFromQueue(callId) {
         ivrSettings.currentQueue.forEach((entry, i) => {
             entry.position = i + 1;
         });
-        console.log(`📞 Caller ${removed.callerNumber} removed from queue`);
+        console.log('📞 Caller removed from queue');
         return { success: true, removed };
     }
     return { success: false, error: 'Call not found in queue' };

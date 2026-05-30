@@ -53,7 +53,7 @@ async function create(inquiryData) {
             privacyConsent, sensitiveDataConsent, consentPolicyVersion, consentRecordedAt
         ]);
 
-        console.log(`📝 Inquiry saved: ${inquiryId} from ${phone || email}`);
+        console.log(`📝 Inquiry saved: ${inquiryId}`);
         return mapRowToInquiry(result[0]);
     } catch (error) {
         console.error('Error saving inquiry:', error.message);

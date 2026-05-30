@@ -118,7 +118,7 @@ router.post('/dial-callback', async (req, res) => {
             );
 
             if (!updatedCall) {
-                console.error(`Failed to update dial outcome for provider ID ${webhook.providerCallId}`);
+                console.error('Failed to update dial outcome for provider call');
             }
         } else {
             console.error('Dial callback did not include a provider call ID');

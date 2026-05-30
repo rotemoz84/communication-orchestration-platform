@@ -28,7 +28,6 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
 
     const tryPHPFallback = async () => {
         try {
-            console.log('Attempting PHP fallback with data:', formData);
             // Try PHP fallback endpoint
             const PHP_URL = 'https://drozyuval.com/contact.php'; // Production URL
             
@@ -40,27 +39,19 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
                 body: JSON.stringify(formData),
             });
 
-            console.log('PHP fallback response status:', response.status);
-            
             if (response.ok) {
                 const result = await response.json();
-                console.log('PHP fallback response:', result);
                 if (result.success) {
                     setStatus('success');
                     // Reset form on success
                     setFormData({ name: '', phone: '', email: '', service: '', week: '', message: '', privacyConsent: false, sensitiveDataConsent: false, callbackConsent: false });
-                    console.log('✅ Form submitted successfully using PHP FALLBACK system');
-                    console.log('PHP fallback successful:', result);
                 } else {
                     setStatus('error');
-                    console.error('PHP fallback returned error:', result);
                 }
             } else {
                 setStatus('error');
-                console.error('PHP fallback HTTP error:', response.status, response.statusText);
             }
-        } catch (error) {
-            console.error('PHP fallback failed:', error);
+        } catch {
             setStatus('error');
         }
     };
@@ -83,7 +74,6 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
 
         try {
             
-            console.log('Attempting main API submission with data:', formData);
             // Try main API endpoint first
             const API_URL = 'https://api.drozyuval.com/api/inquiries';
             
@@ -95,29 +85,21 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
                 body: JSON.stringify(formData),
             });
 
-            console.log('Main API response status:', response.status);
-
             if (response.ok) {
                 const result = await response.json();
-                console.log('Main API response:', result);
                 if (result.success) {
                     setStatus('success');
                     // Reset form on success
                     setFormData({ name: '', phone: '', email: '', service: '', week: '', message: '', privacyConsent: false, sensitiveDataConsent: false, callbackConsent: false });
-                    console.log('✅ Form submitted successfully using MAIN API system');
-                    console.log('Main API successful:', result);
                 } else {
                     // If main API returns success=false, try PHP fallback
-                    console.error('Main API returned success=false:', result);
                     await tryPHPFallback();
                 }
             } else {
                 // If main API fails, try PHP fallback
-                console.error('Main API HTTP error:', response.status, response.statusText);
                 await tryPHPFallback();
             }
-        } catch (error) {
-            console.error('Main API failed, trying PHP fallback:', error);
+        } catch {
             await tryPHPFallback();
         }
     };

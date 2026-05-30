@@ -40,7 +40,7 @@ async function create(callData) {
 
         const result = await query(sql, [callId, callerNumber, officeStatus, outcome, providerCallId, notes, direction, calleeNumber]);
 
-        console.log(`📊 Call tracked: ${callId} from ${callerNumber} (${direction}) - ${outcome}`);
+        console.log(`📊 Call tracked: ${callId} (${direction}) - ${outcome}`);
         return mapRowToCall(result[0]);
     } catch (error) {
         console.error('Error saving call record:', error.message);
@@ -99,11 +99,11 @@ async function updateByCallerNumber(callerNumber, updateData) {
         const result = await query(sql, params);
 
         if (result.length > 0) {
-            console.log(`📊 Call record updated for ${callerNumber}`);
+            console.log('📊 Call record updated');
             return mapRowToCall(result[0]);
         }
         
-        console.log(`No call record found for ${callerNumber}`);
+        console.log('No matching call record found');
         return null;
     } catch (error) {
         console.error('Error updating call record:', error.message);
@@ -156,7 +156,7 @@ async function updateByProviderCallId(providerCallId, updateData) {
         const result = await query(sql, params);
 
         if (result.length > 0) {
-            console.log(`📊 Call record updated for provider ID ${providerCallId}`);
+            console.log('📊 Call record updated for provider call');
             return mapRowToCall(result[0]);
         }
         return null;

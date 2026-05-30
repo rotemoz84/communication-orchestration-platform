@@ -178,7 +178,7 @@ Booked via website
             requestBody: event
         });
 
-        console.log(`📅 Event created: ${response.data.htmlLink}`);
+        console.log('📅 Calendar event created');
 
         return {
             eventId: response.data.id,

@@ -8,7 +8,7 @@ function requireAuth(req, res, next) {
         return next();
     }
     if (process.env.NODE_ENV === 'production') {
-        console.log('Auth: 401 no session (sessionId=' + (req.sessionID || 'none') + ')');
+        console.log('Auth: 401 no authenticated session');
     }
     res.status(401).json({ error: 'Unauthorized', code: 'LOGIN_REQUIRED' });
 }

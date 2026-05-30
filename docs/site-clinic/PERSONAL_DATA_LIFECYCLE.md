@@ -54,3 +54,10 @@ notification emails. For a verified erasure request:
 Automated retention deletion is not configured in this repository. The clinic
 and qualified counsel must approve retention periods and any required
 exceptions before a purge job is introduced.
+
+## Application Logging
+
+Application logs intentionally omit contact details, caller numbers, session
+IDs, provider call IDs, and calendar event links. Keep this minimization in
+place when adding diagnostics. Hosting and provider-side logs still need their
+own retention and access-control review.
