@@ -17,6 +17,8 @@ All maintained Markdown documentation is centralized in this directory.
   and migration boundaries.
 - [Admin site status](server/ADMIN_SITE_IMPLEMENTATION_PLAN.md) - current admin
   behavior and planned audit/SSO follow-up.
+- [Project roadmap](ROADMAP.md) - maintained backlog and completed-work
+  checklist across security, Telnyx rollout, and future phases.
 - [Telnyx inbound IVR setup](server/TELNYX_CONNECTION_GUIDE.md) - live TeXML
   number and webhook setup.
 - [Telnyx TeXML IVR plan](server/TELNYX_TEXML_IVR_IMPLEMENTATION_PLAN.md) -
