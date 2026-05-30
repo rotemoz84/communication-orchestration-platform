@@ -46,6 +46,8 @@ Submission surfaces:
   webhook routes do not expose IVR settings or live queue caller details.
 - Manual Calendar-to-Sheets synchronization and booking-settings cache refresh
   require an authenticated admin session.
+- API failures and stored IVR follow-up notes use stable messages rather than
+  persisting or returning provider and configuration error details.
 - Data may be stored in both PostgreSQL and PHP-generated CSV/email delivery;
   operational ownership and deletion handling must cover all locations.
 

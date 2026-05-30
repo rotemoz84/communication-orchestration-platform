@@ -96,8 +96,8 @@ router.post('/cron-login', async (req, res) => {
             res.json({ success: true, message: 'Session created; use cookie for next request' });
         });
     } catch (error) {
-        console.error('Cron login error:', error.message, error.stack);
-        res.status(500).json({ error: 'Cron login failed', message: error.message });
+        console.error('Cron login error:', error.message);
+        res.status(500).json({ error: 'Cron login failed' });
     }
 });
 

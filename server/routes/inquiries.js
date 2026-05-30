@@ -179,8 +179,8 @@ router.get('/preview-summary', requireAuth, async (req, res) => {
             inquiries: inquiries
         });
     } catch (error) {
-        console.error('Preview error:', error);
-        res.status(500).json({ error: error.message });
+        console.error('Preview error:', error.message);
+        res.status(500).json({ error: 'Failed to preview inquiry summary' });
     }
 });
 
@@ -200,8 +200,8 @@ router.post('/send-summary', requireAuth, async (req, res) => {
             ...result
         });
     } catch (error) {
-        console.error('Summary error:', error);
-        res.status(500).json({ error: error.message });
+        console.error('Summary error:', error.message);
+        res.status(500).json({ error: 'Failed to send inquiry summary' });
     }
 });
 

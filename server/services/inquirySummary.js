@@ -79,7 +79,7 @@ async function sendDailySummary() {
         // Update job state with error (but don't update last_success_at)
         await jobStateRepository.updateJobState(JOB_NAME, {
             success: false,
-            error: error.message
+            error: 'Inquiry summary failed'
         });
         
         throw error;

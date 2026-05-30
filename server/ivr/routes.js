@@ -177,7 +177,7 @@ function createFollowUpMenuHandler(reason, requestedOutcome) {
                     outcome: requestedOutcome,
                     notes: notification.success
                         ? `Follow-up requested (${reason}); interim email sent.`
-                        : `Follow-up requested (${reason}); interim email unavailable: ${notification.error}.`
+                        : `Follow-up requested (${reason}); interim email unavailable.`
                 });
             }
 
@@ -226,7 +226,7 @@ adminRouter.post('/settings', (req, res) => {
         });
     } catch (error) {
         console.error('Error updating IVR settings:', error.message);
-        return res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: 'Failed to update IVR settings' });
     }
 });
 
@@ -242,7 +242,7 @@ adminRouter.get('/settings', (req, res) => {
         });
     } catch (error) {
         console.error('Error getting IVR settings:', error.message);
-        return res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: 'Failed to get IVR settings' });
     }
 });
 
@@ -264,7 +264,7 @@ adminRouter.post('/emergency', (req, res) => {
         });
     } catch (error) {
         console.error('Error toggling emergency mode:', error.message);
-        return res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: 'Failed to toggle emergency mode' });
     }
 });
 
@@ -280,7 +280,7 @@ adminRouter.get('/queue', (req, res) => {
         });
     } catch (error) {
         console.error('Error getting queue status:', error.message);
-        return res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: 'Failed to get queue status' });
     }
 });
 
@@ -303,7 +303,7 @@ adminRouter.post('/queue/add', (req, res) => {
         });
     } catch (error) {
         console.error('Error adding to queue:', error.message);
-        return res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: 'Failed to add queue entry' });
     }
 });
 
@@ -326,7 +326,7 @@ adminRouter.post('/queue/remove', (req, res) => {
         });
     } catch (error) {
         console.error('Error removing from queue:', error.message);
-        return res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: 'Failed to remove queue entry' });
     }
 });
 
@@ -345,9 +345,10 @@ adminRouter.get('/status', async (req, res) => {
             officeStatus
         });
     } catch (error) {
+        console.error('Error getting IVR status:', error.message);
         return res.status(500).json({
             success: false,
-            error: error.message
+            error: 'Failed to get IVR status'
         });
     }
 });

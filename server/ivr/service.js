@@ -87,7 +87,7 @@ async function getOfficeStatus() {
             isOpen,
             workingHours: settings.workingHours,
             timezone: config.timezone,
-            ivrSettings: ivrSettings,
+            ivrSettings: getIvrSettings(),
             queueStatus: {
                 enabled: ivrSettings.queueEnabled,
                 currentSize: ivrSettings.currentQueue.length,
@@ -98,7 +98,7 @@ async function getOfficeStatus() {
         console.error('Error getting office status:', error.message);
         return {
             isOpen: false,
-            error: error.message
+            error: 'Unable to determine office status'
         };
     }
 }

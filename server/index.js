@@ -112,7 +112,7 @@ async function syncCalendar(req, res) {
             ...result
         });
     } catch (error) {
-        console.error('Sync error:', error);
+        console.error('Sync error:', error.message);
         res.status(500).json({ error: 'Calendar sync failed' });
     }
 }
@@ -123,9 +123,9 @@ async function syncCalendar(req, res) {
 
 app.use((err, req, res, next) => {
     console.error('Error:', err.message);
-    res.status(err.status || 500).json({
-        error: err.message || 'Internal server error',
-        ...(config.nodeEnv === 'development' && { stack: err.stack })
+    const status = err.status || 500;
+    res.status(status).json({
+        error: status >= 500 ? 'Internal server error' : (err.message || 'Request failed')
     });
 });
 

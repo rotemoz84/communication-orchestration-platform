@@ -273,7 +273,7 @@ test('follow-up request remains graceful when interim notification is unavailabl
     assert.deepEqual(updatedCalls, [{
         providerCallId: 'v3:incoming-no-email',
         outcome: 'closed_hours_followup_requested',
-        notes: 'Follow-up requested (closed_hours); interim email unavailable: SMTP not configured.'
+        notes: 'Follow-up requested (closed_hours); interim email unavailable.'
     }]);
     assert.match(xml, /בקשתך התקבלה/);
     assert.match(xml, /<Hangup\/>/);

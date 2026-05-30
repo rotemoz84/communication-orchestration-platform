@@ -58,7 +58,7 @@ async function testEmailConnection() {
         return { success: true };
     } catch (error) {
         console.error('❌ SMTP connection failed:', error.message);
-        return { success: false, error: error.message };
+        return { success: false, error: 'SMTP connection failed' };
     }
 }
 
@@ -206,7 +206,7 @@ async function sendIvrFallbackNotification({
         transporter = initializeEmailTransporter();
         if (!transporter) {
             console.log('IVR fallback notification skipped: SMTP not configured');
-            return { success: false, error: 'SMTP not configured' };
+            return { success: false, error: 'Notification delivery unavailable' };
         }
     }
 
@@ -215,7 +215,7 @@ async function sendIvrFallbackNotification({
 
     if (!recipientEmail || !senderEmail) {
         console.warn('IVR fallback notification skipped: EMAIL_FROM or IVR_FALLBACK_EMAIL_TO not configured');
-        return { success: false, error: 'EMAIL_FROM or IVR_FALLBACK_EMAIL_TO not configured' };
+        return { success: false, error: 'Notification delivery unavailable' };
     }
 
     const notificationTime = timestamp instanceof Date ? timestamp : new Date(timestamp);
@@ -246,7 +246,7 @@ async function sendIvrFallbackNotification({
         return { success: true, messageId: info.messageId };
     } catch (error) {
         console.error('Failed to send IVR fallback notification:', error.message);
-        return { success: false, error: error.message };
+        return { success: false, error: 'Notification delivery unavailable' };
     }
 }
 

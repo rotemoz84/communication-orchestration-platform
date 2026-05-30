@@ -96,7 +96,7 @@ test('IVR fallback notification handles missing SMTP or notification recipient',
         reason: 'closed_hours'
     });
 
-    assert.deepEqual(withoutSmtp, { success: false, error: 'SMTP not configured' });
+    assert.deepEqual(withoutSmtp, { success: false, error: 'Notification delivery unavailable' });
     assert.equal(sentMessages.length, 0);
 
     process.env.SMTP_HOST = 'smtp.example.test';
@@ -108,7 +108,7 @@ test('IVR fallback notification handles missing SMTP or notification recipient',
 
     assert.deepEqual(withoutRecipient, {
         success: false,
-        error: 'EMAIL_FROM or IVR_FALLBACK_EMAIL_TO not configured'
+        error: 'Notification delivery unavailable'
     });
     assert.equal(sentMessages.length, 0);
 });

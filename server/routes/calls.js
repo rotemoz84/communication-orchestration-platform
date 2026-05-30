@@ -35,8 +35,8 @@ router.get('/', async (req, res) => {
             records
         });
     } catch (error) {
-        console.error('Error fetching calls:', error);
-        res.status(500).json({ error: error.message });
+        console.error('Error fetching calls:', error.message);
+        res.status(500).json({ error: 'Failed to fetch calls' });
     }
 });
 
@@ -62,8 +62,8 @@ router.get('/recent', async (req, res) => {
             calls
         });
     } catch (error) {
-        console.error('Error fetching recent calls:', error);
-        res.status(500).json({ error: error.message });
+        console.error('Error fetching recent calls:', error.message);
+        res.status(500).json({ error: 'Failed to fetch recent calls' });
     }
 });
 
@@ -90,8 +90,8 @@ router.get('/stats', async (req, res) => {
             stats
         });
     } catch (error) {
-        console.error('Error fetching call stats:', error);
-        res.status(500).json({ error: error.message });
+        console.error('Error fetching call stats:', error.message);
+        res.status(500).json({ error: 'Failed to fetch call stats' });
     }
 });
 
@@ -113,8 +113,8 @@ router.get('/:id', async (req, res) => {
             call
         });
     } catch (error) {
-        console.error('Error fetching call:', error);
-        res.status(500).json({ error: error.message });
+        console.error('Error fetching call:', error.message);
+        res.status(500).json({ error: 'Failed to fetch call' });
     }
 });
 
@@ -152,8 +152,8 @@ router.patch('/:id', async (req, res) => {
             call: updatedCall
         });
     } catch (error) {
-        console.error('Error updating call:', error);
-        res.status(500).json({ error: error.message });
+        console.error('Error updating call:', error.message);
+        res.status(500).json({ error: 'Failed to update call' });
     }
 });
 
