@@ -28,6 +28,9 @@ PostgreSQL.
 ```
 
 At least one of `phone` or `email` and explicit `privacyConsent` are required.
+Text fields are trimmed before storage. Limits are: `name`, `email`, and
+`service` 100 characters; `phone` 20 characters; and `message` 1,000
+characters. When supplied, `week` must be a whole number from 1 through 42.
 When `week` is provided, explicit `sensitiveDataConsent` is also required. The
 server stores the accepted consent flags with its current policy version and a
 server-side timestamp. A successful response is:

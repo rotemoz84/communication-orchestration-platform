@@ -37,6 +37,10 @@ server-side timestamp in its CSV output. Existing historical CSV rows are
 preserved with blank evidence fields when the header is upgraded. Responses are
 JSON:
 
+Text intake is bounded before storage: name, email, and requested service are
+limited to 100 characters, phone to 20 characters, and message to 1,000
+characters. Pregnancy week must be a whole number from 1 through 42.
+
 - `200` on a successful save/send attempt.
 - `400` for invalid input.
 - `405` for unsupported HTTP method.

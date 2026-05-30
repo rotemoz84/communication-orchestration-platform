@@ -30,3 +30,12 @@ test('PHP inquiry fallback enforces and records consent evidence', () => {
     assert.match(phpFallback, /\$PRIVACY_POLICY_VERSION = '2026-02';/);
     assert.match(phpFallback, /'Consent Recorded At'/);
 });
+
+test('PHP inquiry fallback bounds copied personal data before storage', () => {
+    const phpFallback = read('../site_clinic/src/contact.php');
+
+    assert.match(phpFallback, /'message' => 1000/);
+    assert.match(phpFallback, /textLength\(\$rawValue\) > \$maxLength/);
+    assert.match(phpFallback, /Pregnancy week must be a whole number between 1 and 42/);
+    assert.match(phpFallback, /FILTER_VALIDATE_EMAIL/);
+});

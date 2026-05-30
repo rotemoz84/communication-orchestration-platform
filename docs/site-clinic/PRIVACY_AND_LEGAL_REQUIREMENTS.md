@@ -36,6 +36,8 @@ Submission surfaces:
   whether collecting it would be necessary and proportionate.
 - Successful Node intake no longer invokes the PHP fallback, avoiding the
   previous duplicate CSV/email copy for the normal submission path.
+- Public inquiry fields are trimmed and bounded before storage or fallback
+  copying; pregnancy week must be a whole number from 1 through 42.
 - A restricted-operator personal-data lifecycle runbook exists, but automated
   retention and external-copy cleanup are not implemented.
 - Administrative access exists, but a documented access/change audit trail is

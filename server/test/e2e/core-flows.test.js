@@ -209,7 +209,7 @@ test('public lead capture requires contact details and consent evidence', async 
         method: 'POST',
         body: JSON.stringify({
             phone: '0501234567',
-            week: '12',
+            week: 12,
             privacyConsent: true
         })
     });
@@ -221,11 +221,41 @@ test('public lead capture requires contact details and consent evidence', async 
     );
     assert.equal(createdInquiries.length, 0);
 
+    const invalidPregnancyWeek = await request('/api/inquiries', {
+        method: 'POST',
+        body: JSON.stringify({
+            phone: '0501234567',
+            week: '43',
+            privacyConsent: true,
+            sensitiveDataConsent: true
+        })
+    });
+
+    assert.equal(invalidPregnancyWeek.response.status, 400);
+    assert.equal(
+        invalidPregnancyWeek.body.error,
+        'Pregnancy week must be a whole number between 1 and 42'
+    );
+    assert.equal(createdInquiries.length, 0);
+
+    const oversizedMessage = await request('/api/inquiries', {
+        method: 'POST',
+        body: JSON.stringify({
+            phone: '0501234567',
+            message: 'x'.repeat(1001),
+            privacyConsent: true
+        })
+    });
+
+    assert.equal(oversizedMessage.response.status, 400);
+    assert.equal(oversizedMessage.body.error, 'message exceeds the 1000 character limit');
+    assert.equal(createdInquiries.length, 0);
+
     const accepted = await request('/api/inquiries', {
         method: 'POST',
         body: JSON.stringify({
-            name: 'Patient',
-            phone: '0501234567',
+            name: ' Patient ',
+            phone: ' 0501234567 ',
             service: 'Consultation',
             week: '12',
             message: 'Please call',
@@ -238,7 +268,9 @@ test('public lead capture requires contact details and consent evidence', async 
     assert.deepEqual(accepted.body, { success: true, inquiryId: 'INQ-TEST-1' });
     assert.equal(createdInquiries.length, 1);
     assert.equal(createdInquiries[0].source, 'website');
+    assert.equal(createdInquiries[0].name, 'Patient');
     assert.equal(createdInquiries[0].phone, '0501234567');
+    assert.equal(createdInquiries[0].week, '12');
     assert.equal(createdInquiries[0].privacyConsent, true);
     assert.equal(createdInquiries[0].sensitiveDataConsent, true);
     assert.equal(createdInquiries[0].consentPolicyVersion, '2026-02');

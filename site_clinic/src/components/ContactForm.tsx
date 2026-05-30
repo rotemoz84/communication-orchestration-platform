@@ -172,6 +172,7 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
                                 className="input-field !bg-slate-50 !border-slate-200 !text-primary-navy !rounded-2xl !py-4"
                                 placeholder={t('contact.form.namePlaceholder')}
                                 value={formData.name}
+                                maxLength={100}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             />
                         </div>
@@ -186,6 +187,7 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
                                     className={`input-field !bg-slate-50 !text-primary-navy !rounded-2xl !py-4 ${(validationError || highlightContactFields) ? '!border-amber-500 !ring-2 !ring-amber-300 validation-highlight' : '!border-slate-200'}`}
                                     placeholder={t('contact.form.phonePlaceholder')}
                                     value={formData.phone}
+                                    maxLength={20}
                                     onChange={(e) => {
                                         const onlyDigits = e.target.value.replace(/\D/g, '');
                                         setFormData({ ...formData, phone: onlyDigits });
@@ -203,6 +205,7 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
                                     className={`input-field !bg-slate-50 !text-primary-navy !rounded-2xl !py-4 ${(validationError || highlightContactFields) ? '!border-amber-500 !ring-2 !ring-amber-300 validation-highlight' : '!border-slate-200'}`}
                                     placeholder={t('contact.form.emailPlaceholder')}
                                     value={formData.email}
+                                    maxLength={100}
                                     onChange={(e) => {
                                         const nextEmail = e.target.value;
                                         setFormData({ ...formData, email: nextEmail });
@@ -261,6 +264,7 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
                                 className="input-field !bg-slate-50 !border-slate-200 !text-primary-navy !rounded-2xl h-28 resize-none !py-4"
                                 placeholder={t('contact.form.messagePlaceholder')}
                                 value={formData.message}
+                                maxLength={1000}
                                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                             ></textarea>
                         </div>

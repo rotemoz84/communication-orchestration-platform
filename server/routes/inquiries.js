@@ -12,8 +12,32 @@ const inquiryRepository = require('../dal/repositories/inquiryRepository');
 const { requireAuth } = require('../middleware/requireAuth');
 const { INQUIRY_CONSENT_POLICY_VERSION } = require('../constants');
 
+const INQUIRY_FIELD_LIMITS = {
+    name: 100,
+    phone: 20,
+    email: 100,
+    service: 100,
+    message: 1000
+};
+
 function hasSubmittedValue(value) {
-    return value !== undefined && value !== null && String(value).trim() !== '';
+    return value !== null;
+}
+
+function normalizeOptionalText(value) {
+    if (typeof value !== 'string') {
+        return null;
+    }
+
+    return value.trim() || null;
+}
+
+function normalizePregnancyWeek(value) {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+        return String(value);
+    }
+
+    return normalizeOptionalText(value);
 }
 
 /**
@@ -33,14 +57,45 @@ router.post('/', async (req, res) => {
             privacyConsent,
             sensitiveDataConsent
         } = req.body;
-        const hasPhone = hasSubmittedValue(phone);
-        const hasEmail = hasSubmittedValue(email);
-        const hasPregnancyWeek = hasSubmittedValue(week);
+        const normalized = {
+            name: normalizeOptionalText(name),
+            phone: normalizeOptionalText(phone),
+            email: normalizeOptionalText(email),
+            service: normalizeOptionalText(service),
+            week: normalizePregnancyWeek(week),
+            message: normalizeOptionalText(message)
+        };
+        const hasPhone = hasSubmittedValue(normalized.phone);
+        const hasEmail = hasSubmittedValue(normalized.email);
+        const hasPregnancyWeek = hasSubmittedValue(normalized.week);
 
         // Validation: Either phone or email must be provided
         if (!hasPhone && !hasEmail) {
             return res.status(400).json({ 
                 error: 'Phone or email is required' 
+            });
+        }
+
+        for (const [field, maxLength] of Object.entries(INQUIRY_FIELD_LIMITS)) {
+            if (normalized[field] && normalized[field].length > maxLength) {
+                return res.status(400).json({
+                    error: `${field} exceeds the ${maxLength} character limit`
+                });
+            }
+        }
+
+        if (hasEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized.email)) {
+            return res.status(400).json({
+                error: 'Email format is invalid'
+            });
+        }
+
+        if (
+            hasPregnancyWeek
+            && (!/^\d+$/.test(normalized.week) || Number(normalized.week) < 1 || Number(normalized.week) > 42)
+        ) {
+            return res.status(400).json({
+                error: 'Pregnancy week must be a whole number between 1 and 42'
             });
         }
 
@@ -57,12 +112,7 @@ router.post('/', async (req, res) => {
         }
 
         const inquiry = await inquiryRepository.create({
-            name,
-            phone,
-            email,
-            service,
-            week,
-            message,
+            ...normalized,
             source: 'website',
             privacyConsent: true,
             sensitiveDataConsent: hasPregnancyWeek ? true : false,

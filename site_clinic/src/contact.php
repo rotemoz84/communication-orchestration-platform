@@ -17,6 +17,13 @@ $CSV_HEADERS = [
     'Privacy Consent', 'Sensitive Data Consent', 'Consent Policy Version',
     'Consent Recorded At'
 ];
+$FIELD_LIMITS = [
+    'name' => 100,
+    'phone' => 20,
+    'email' => 100,
+    'service' => 100,
+    'message' => 1000
+];
 
 function respondWithError($statusCode, $message) {
     http_response_code($statusCode);
@@ -24,8 +31,22 @@ function respondWithError($statusCode, $message) {
     exit();
 }
 
-function hasSubmittedValue($data, $key) {
-    return isset($data[$key]) && trim((string) $data[$key]) !== '';
+function normalizedText($data, $key) {
+    return isset($data[$key]) && is_string($data[$key])
+        ? trim($data[$key])
+        : '';
+}
+
+function normalizedPregnancyWeek($data) {
+    if (!isset($data['week']) || (!is_string($data['week']) && !is_int($data['week']) && !is_float($data['week']))) {
+        return '';
+    }
+
+    return trim((string) $data['week']);
+}
+
+function textLength($value) {
+    return function_exists('mb_strlen') ? mb_strlen($value, 'UTF-8') : strlen($value);
 }
 
 function appendCsvRow($filename, $headers, $row) {
@@ -95,9 +116,23 @@ if (!$data) {
 }
 
 // --- Server-side Intake Validation ---
-$hasPhone = hasSubmittedValue($data, 'phone');
-$hasEmail = hasSubmittedValue($data, 'email');
-$hasPregnancyWeek = hasSubmittedValue($data, 'week');
+$rawFields = [
+    'name' => normalizedText($data, 'name'),
+    'phone' => normalizedText($data, 'phone'),
+    'email' => normalizedText($data, 'email'),
+    'service' => normalizedText($data, 'service'),
+    'week' => normalizedPregnancyWeek($data),
+    'message' => normalizedText($data, 'message')
+];
+$rawName = $rawFields['name'];
+$rawPhone = $rawFields['phone'];
+$rawEmail = $rawFields['email'];
+$rawService = $rawFields['service'];
+$rawWeek = $rawFields['week'];
+$rawMessage = $rawFields['message'];
+$hasPhone = $rawPhone !== '';
+$hasEmail = $rawEmail !== '';
+$hasPregnancyWeek = $rawWeek !== '';
 $privacyConsent = isset($data['privacyConsent']) && $data['privacyConsent'] === true;
 $sensitiveDataConsent = isset($data['sensitiveDataConsent']) && $data['sensitiveDataConsent'] === true;
 
@@ -107,17 +142,29 @@ if (!$hasPhone && !$hasEmail) {
 if (!$privacyConsent) {
     respondWithError(400, 'Privacy consent is required');
 }
+foreach ($FIELD_LIMITS as $field => $maxLength) {
+    $rawValue = $rawFields[$field];
+    if ($rawValue !== '' && textLength($rawValue) > $maxLength) {
+        respondWithError(400, "$field exceeds the $maxLength character limit");
+    }
+}
+if ($hasEmail && !filter_var($rawEmail, FILTER_VALIDATE_EMAIL)) {
+    respondWithError(400, 'Email format is invalid');
+}
+if ($hasPregnancyWeek && (!preg_match('/^\d+$/', $rawWeek) || (int) $rawWeek < 1 || (int) $rawWeek > 42)) {
+    respondWithError(400, 'Pregnancy week must be a whole number between 1 and 42');
+}
 if ($hasPregnancyWeek && !$sensitiveDataConsent) {
     respondWithError(400, 'Sensitive data consent is required when pregnancy week is provided');
 }
 
 // --- Data Extraction and Sanitization ---
-$name    = isset($data['name']) ? htmlspecialchars(trim($data['name']), ENT_QUOTES, 'UTF-8') : 'לא צויין';
-$phone   = isset($data['phone']) ? htmlspecialchars(trim($data['phone']), ENT_QUOTES, 'UTF-8') : 'לא צויין';
-$email   = isset($data['email']) ? filter_var(trim($data['email']), FILTER_SANITIZE_EMAIL) : 'לא צויין';
-$service = isset($data['service']) ? htmlspecialchars(trim($data['service']), ENT_QUOTES, 'UTF-8') : 'לא צויין';
-$week    = isset($data['week']) ? htmlspecialchars(trim($data['week']), ENT_QUOTES, 'UTF-8') : 'לא צויין';
-$message = isset($data['message']) ? htmlspecialchars(trim($data['message']), ENT_QUOTES, 'UTF-8') : 'ללא הודעה';
+$name    = $rawName !== '' ? htmlspecialchars($rawName, ENT_QUOTES, 'UTF-8') : 'לא צויין';
+$phone   = $rawPhone !== '' ? htmlspecialchars($rawPhone, ENT_QUOTES, 'UTF-8') : 'לא צויין';
+$email   = $rawEmail !== '' ? filter_var($rawEmail, FILTER_SANITIZE_EMAIL) : 'לא צויין';
+$service = $rawService !== '' ? htmlspecialchars($rawService, ENT_QUOTES, 'UTF-8') : 'לא צויין';
+$week    = $rawWeek !== '' ? htmlspecialchars($rawWeek, ENT_QUOTES, 'UTF-8') : 'לא צויין';
+$message = $rawMessage !== '' ? htmlspecialchars($rawMessage, ENT_QUOTES, 'UTF-8') : 'ללא הודעה';
 $timestamp = date('Y-m-d H:i:s');
 $consentRecordedAt = date('c');
 
