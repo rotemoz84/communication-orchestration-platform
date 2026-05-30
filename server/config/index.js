@@ -34,6 +34,11 @@ const config = {
     
     // Business
     repPhoneNumber: process.env.REP_PHONE_NUMBER || '+972500000000',
+
+    // Telnyx webhook verification
+    telnyx: {
+        publicKey: process.env.TELNYX_PUBLIC_KEY
+    },
     
     // IVR Settings
     ivr: {
@@ -69,6 +74,7 @@ function validateConfig() {
     // Check required fields
     if (!config.google.sheetId) missing.push('GOOGLE_SHEET_ID');
     if (!config.google.calendarId) missing.push('GOOGLE_CALENDAR_ID');
+    if (!config.telnyx.publicKey) missing.push('TELNYX_PUBLIC_KEY');
     
     if (missing.length > 0) {
         console.warn(`⚠️ Missing configuration: ${missing.join(', ')}`);

@@ -60,7 +60,12 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // For webhook form payloads
+app.use(express.urlencoded({
+    extended: true,
+    verify(req, res, buffer) {
+        req.rawBody = Buffer.from(buffer);
+    }
+})); // Preserve exact webhook form bytes for Telnyx signature verification.
 
 // ============================================
 // Route Prefix (for cPanel deployments)

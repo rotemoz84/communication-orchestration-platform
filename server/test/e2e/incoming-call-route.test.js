@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict');
+const { generateKeyPairSync, sign } = require('node:crypto');
 const { after, before, beforeEach, test } = require('node:test');
 const express = require('express');
 
@@ -11,11 +12,17 @@ const priorModules = new Map();
 const incomingCalls = [];
 const updatedCalls = [];
 const notifications = [];
+const { publicKey, privateKey } = generateKeyPairSync('ed25519');
+const telnyxPublicKey = publicKey
+    .export({ format: 'der', type: 'spki' })
+    .subarray(-32)
+    .toString('base64');
 
 let server;
 let baseUrl;
 let officeOpen;
 let notificationResult;
+let testConfig;
 
 function replaceModule(modulePath, exports) {
     priorModules.set(modulePath, require.cache[modulePath]);
@@ -31,19 +38,36 @@ async function incomingRequest(fields) {
     return voiceRequest('/incoming', fields);
 }
 
-async function voiceRequest(path, fields) {
+async function voiceRequest(path, fields, options = {}) {
+    const body = new URLSearchParams(fields).toString();
+    const timestamp = options.timestamp || String(Math.floor(Date.now() / 1000));
+    const signedBody = options.signedBody === undefined ? body : options.signedBody;
+    const signature = sign(
+        null,
+        Buffer.from(`${timestamp}|${signedBody}`),
+        privateKey
+    ).toString('base64');
+
     return fetch(`${baseUrl}/api/voice${path}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams(fields)
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'telnyx-signature-ed25519': signature,
+            'telnyx-timestamp': timestamp
+        },
+        body
     });
 }
 
 before(async () => {
-    replaceModule(configPath, {
-        config: {
-            repPhoneNumber: '+972509111111'
+    testConfig = {
+        repPhoneNumber: '+972509111111',
+        telnyx: {
+            publicKey: telnyxPublicKey
         }
+    };
+    replaceModule(configPath, {
+        config: testConfig
     });
     replaceModule(repositoryPath, {
         async create(call) {
@@ -69,7 +93,12 @@ before(async () => {
     delete require.cache[routesPath];
 
     const app = express();
-    app.use(express.urlencoded({ extended: true }));
+    app.use(express.urlencoded({
+        extended: true,
+        verify(req, res, buffer) {
+            req.rawBody = Buffer.from(buffer);
+        }
+    }));
     app.use('/api/voice', require('../../ivr/routes'));
     server = await new Promise(resolve => {
         const listening = app.listen(0, '127.0.0.1', () => resolve(listening));
@@ -124,6 +153,51 @@ test('open-hours incoming Telnyx call is tracked and forwarded to the representa
         + '</Dial>'
         + '</Response>'
     );
+});
+
+test('unsigned, expired, or tampered Telnyx requests are rejected before processing', async () => {
+    const unsigned = await fetch(`${baseUrl}/api/voice/incoming`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            CallSid: 'v3:unsigned',
+            From: '+972501234567'
+        })
+    });
+    const expired = await voiceRequest('/incoming', {
+        CallSid: 'v3:expired',
+        From: '+972501234567'
+    }, {
+        timestamp: String(Math.floor(Date.now() / 1000) - (5 * 60) - 1)
+    });
+    const tampered = await voiceRequest('/incoming', {
+        CallSid: 'v3:tampered',
+        From: '+972501234567'
+    }, {
+        signedBody: 'CallSid=v3%3Atampered&From=%2B972500000000'
+    });
+
+    assert.equal(unsigned.status, 403);
+    assert.equal(expired.status, 403);
+    assert.equal(tampered.status, 403);
+    assert.deepEqual(incomingCalls, []);
+});
+
+test('Telnyx callbacks fail closed when the server public key is not configured', async () => {
+    const configuredPublicKey = testConfig.telnyx.publicKey;
+    testConfig.telnyx.publicKey = '';
+
+    try {
+        const response = await incomingRequest({
+            CallSid: 'v3:missing-public-key',
+            From: '+972501234567'
+        });
+
+        assert.equal(response.status, 503);
+        assert.deepEqual(incomingCalls, []);
+    } finally {
+        testConfig.telnyx.publicKey = configuredPublicKey;
+    }
 });
 
 test('closed-hours incoming call can request follow-up through the interim notification', async () => {

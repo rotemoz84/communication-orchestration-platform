@@ -99,6 +99,10 @@ records the incoming call using the provider-neutral `providerCallId`, returns
 representative dialing TeXML during open hours, and returns the closed-hours
 Hebrew menu TeXML otherwise.
 
+All active `/voice` callback routes require a valid Telnyx Ed25519 webhook
+signature and a timestamp no more than five minutes from server time. Missing,
+stale, or invalid signatures are rejected before route processing.
+
 `POST /voice/dial-callback` processes the result of dialing the representative.
 An answered call is recorded and ended; an unsuccessful dial records
 `representative_unavailable` and returns the Hebrew no-answer menu.

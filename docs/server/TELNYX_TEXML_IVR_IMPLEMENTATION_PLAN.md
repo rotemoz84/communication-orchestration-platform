@@ -120,11 +120,13 @@ Values required for live testing:
 BASE_URL=https://public-backend-domain.example
 REP_PHONE_NUMBER=+...
 IVR_FALLBACK_EMAIL_TO=validation-recipient@example.com
+TELNYX_PUBLIC_KEY=<public key from Telnyx Mission Control Portal>
 ```
 
 The inbound TeXML webhook is driven by Telnyx portal number/application
 configuration and the XML response; it does not need a Telnyx API key or Call
-Control connection ID in server configuration.
+Control connection ID in server configuration. The Telnyx public key is
+required to verify signed webhook callbacks.
 
 ## Implementation Steps
 

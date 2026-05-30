@@ -11,10 +11,17 @@ Configure the deployed server with:
 BASE_URL=https://api.drozyuval.com
 REP_PHONE_NUMBER=+972500000000
 IVR_FALLBACK_EMAIL_TO=validation-recipient@example.com
+TELNYX_PUBLIC_KEY=<public key from Telnyx Mission Control Portal>
 ```
 
 The SMTP variables documented in `server/.env.example` are needed if key `9`
 should send the temporary internal validation email.
+
+`TELNYX_PUBLIC_KEY` is required for every active `/api/voice` callback. Copy it
+from **Keys & Credentials > Public Key** in the Telnyx Mission Control Portal.
+The server verifies the Ed25519 signature over the exact request body and
+rejects callbacks with missing, invalid, or expired signatures before
+processing them.
 
 ## Telnyx Portal Setup
 
@@ -33,13 +40,13 @@ should send the temporary internal validation email.
    Telnyx number and verify the patient's caller ID is preserved.
 
 No Telnyx API key or Call Control connection ID is used by this inbound
-webhook implementation. WhatsApp remains deferred to a future Meta
-integration.
+webhook implementation. The Telnyx public key is used only to authenticate
+callbacks. WhatsApp remains deferred to a future Meta integration.
 
 ## Manual Webhook Check
 
-After deploying the database migration and current server code, simulate an
-incoming Telnyx request:
+After deploying the database migration and current server code, use a live
+Telnyx call to exercise the inbound webhook. An unsigned request such as:
 
 ```bash
 curl -X POST https://api.drozyuval.com/api/voice/incoming \
@@ -49,6 +56,6 @@ curl -X POST https://api.drozyuval.com/api/voice/incoming \
   --data-urlencode "To=+972509876543"
 ```
 
-The response is TeXML. Open hours return a `<Dial>` response; closed hours
-return a Hebrew follow-up menu. This request creates a call-history record in
-the deployed database.
+must return `403` and must not create a call-history record. A valid Telnyx
+request returns TeXML: open hours return a `<Dial>` response and closed hours
+return a Hebrew follow-up menu.

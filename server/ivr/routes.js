@@ -20,6 +20,7 @@ const {
 } = require('../integrations/telnyx/voice');
 const { getMessage } = require('./messages');
 const { requireAuth } = require('../middleware/requireAuth');
+const { verifyTelnyxWebhook } = require('../middleware/verifyTelnyxWebhook');
 const {
     addToQueue,
     getIvrSettings,
@@ -52,7 +53,7 @@ function voiceMigrationPending(req, res) {
  * Main Telnyx TeXML entry point for inbound calls.
  * POST /api/voice/incoming
  */
-voiceRouter.post('/incoming', async (req, res) => {
+voiceRouter.post('/incoming', verifyTelnyxWebhook, async (req, res) => {
     const webhook = normalizeTeXMLWebhook(req.body);
     const callerNumber = webhook.from || 'unknown';
 
@@ -105,7 +106,7 @@ voiceRouter.post('/incoming', async (req, res) => {
  * Handle the outcome of dialing the representative during open hours.
  * POST /api/voice/dial-callback
  */
-voiceRouter.post('/dial-callback', async (req, res) => {
+voiceRouter.post('/dial-callback', verifyTelnyxWebhook, async (req, res) => {
     const webhook = normalizeTeXMLWebhook(req.body);
     const representativeAnswered = webhook.dialStatus === 'completed';
 
@@ -197,10 +198,12 @@ function createFollowUpMenuHandler(reason, requestedOutcome) {
 
 voiceRouter.post(
     '/closed-menu',
+    verifyTelnyxWebhook,
     createFollowUpMenuHandler('closed_hours', CALL_OUTCOMES.CLOSED_HOURS_FOLLOWUP_REQUESTED)
 );
 voiceRouter.post(
     '/no-answer-menu',
+    verifyTelnyxWebhook,
     createFollowUpMenuHandler('no_answer', CALL_OUTCOMES.REPRESENTATIVE_UNAVAILABLE_FOLLOWUP_REQUESTED)
 );
 
