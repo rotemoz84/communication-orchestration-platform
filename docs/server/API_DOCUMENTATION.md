@@ -69,7 +69,7 @@ React lead form.
 | `GET` | `/booking/slots?date=YYYY-MM-DD&duration=30` | Available calendar slots |
 | `GET` | `/booking/available-dates` | Dates with available slots |
 | `POST` | `/booking/reserve` | Create a Google Calendar event for an available slot |
-| `POST` | `/booking/refresh-settings` | Clear settings cache |
+| `POST` | `/booking/refresh-settings` | Clear settings cache; authentication required |
 
 `POST /booking/reserve` requires `name`, `email`, `date`, and `time`. It
 returns `409` if a requested slot is no longer available.
@@ -79,7 +79,7 @@ returns `409` if a requested slot is no longer available.
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/health` | Process health and configured timezone |
-| `POST` | `/sync/calendar` | Manually sync Google Calendar data to Sheets |
+| `POST` | `/sync/calendar` | Manually sync Google Calendar data to Sheets; authentication required |
 
 ## Call History
 

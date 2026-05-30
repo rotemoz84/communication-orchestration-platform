@@ -5,8 +5,12 @@
 
 const express = require('express');
 const router = express.Router();
+const adminRouter = express.Router();
 const { getBookingSettings, clearCache } = require('../integrations/google/sheets');
 const { getAvailableSlots, createBookingEvent } = require('../integrations/google/calendar');
+const { requireAuth } = require('../middleware/requireAuth');
+
+adminRouter.use(requireAuth);
 
 /**
  * GET /api/booking/settings
@@ -191,7 +195,7 @@ router.post('/reserve', async (req, res, next) => {
  * POST /api/booking/refresh-settings
  * Clear the settings cache
  */
-router.post('/refresh-settings', async (req, res) => {
+adminRouter.post('/refresh-settings', async (req, res) => {
     clearCache();
     res.json({ 
         success: true, 
@@ -200,3 +204,4 @@ router.post('/refresh-settings', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.adminRouter = adminRouter;

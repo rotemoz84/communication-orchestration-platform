@@ -157,6 +157,7 @@ before(async () => {
 
     app.use('/api/auth', authRoutes);
     app.use('/api/booking', bookingRoutes);
+    app.use('/api/booking', bookingRoutes.adminRouter);
     app.use('/api/inquiries', inquiryRoutes);
     app.use('/api/voice', voiceRoutes);
     app.use('/api/ivr', voiceRoutes.adminRouter);
@@ -344,6 +345,29 @@ test('booking reservation creates an event only for an available time slot', asy
     assert.equal(unavailable.response.status, 409);
     assert.equal(unavailable.body.error, 'This time slot is no longer available');
     assert.equal(createdBookings.length, 1);
+});
+
+test('booking settings cache refresh requires login', async () => {
+    const unauthenticated = await request('/api/booking/refresh-settings', {
+        method: 'POST'
+    });
+    assert.equal(unauthenticated.response.status, 401);
+
+    const login = await request('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({
+            email: 'admin@example.test',
+            password: 'correct-password'
+        })
+    });
+    const sessionId = login.response.headers.get('x-test-session');
+    const authenticated = await request('/api/booking/refresh-settings', {
+        method: 'POST',
+        headers: { 'x-test-session': sessionId }
+    });
+
+    assert.equal(authenticated.response.status, 200);
+    assert.equal(authenticated.body.success, true);
 });
 
 test('pending voice callbacks and WhatsApp entry points remain disabled during migration', async () => {

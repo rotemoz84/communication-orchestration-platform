@@ -17,6 +17,7 @@ const { initDatabase, getPool } = require('./dal');
 // Routes
 const authRoutes = require('./routes/auth');
 const bookingRoutes = require('./routes/booking');
+const bookingAdminRoutes = bookingRoutes.adminRouter;
 const whatsappRoutes = require('./routes/whatsapp');
 let callRoutes;
 try {
@@ -28,6 +29,7 @@ try {
 const inquiryRoutes = require('./routes/inquiries');
 const voiceRoutes = require('./ivr/routes');
 const ivrAdminRoutes = voiceRoutes.adminRouter;
+const { requireAuth } = require('./middleware/requireAuth');
 
 // Google Integrations (Calendar Sync)
 const { 
@@ -100,12 +102,7 @@ app.use(BASE_PATH + '/api/whatsapp', whatsappRoutes);
 // Inquiry and call-record APIs are mounted after session in startServer()
 // so protected administration endpoints can authenticate requests.
 
-// ============================================
-// Admin/Management Endpoints
-// ============================================
-
-// Manual calendar sync trigger
-app.post(BASE_PATH + '/api/sync/calendar', async (req, res) => {
+async function syncCalendar(req, res) {
     try {
         console.log('🔄 Manual calendar sync requested');
         const result = await syncCalendarToSheet();
@@ -116,9 +113,9 @@ app.post(BASE_PATH + '/api/sync/calendar', async (req, res) => {
         });
     } catch (error) {
         console.error('Sync error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Calendar sync failed' });
     }
-});
+}
 
 // ============================================
 // Error Handling
@@ -181,6 +178,8 @@ async function startServer() {
             app.use(BASE_PATH + '/api/inquiries', inquiryRoutes);
             app.use(BASE_PATH + '/api/calls', callRoutes);
             app.use(BASE_PATH + '/api/ivr', ivrAdminRoutes);
+            app.use(BASE_PATH + '/api/booking', bookingAdminRoutes);
+            app.post(BASE_PATH + '/api/sync/calendar', requireAuth, syncCalendar);
 
             // Admin SPA: serve static files and SPA fallback
             const adminPath = path.join(__dirname, 'public', 'admin');
