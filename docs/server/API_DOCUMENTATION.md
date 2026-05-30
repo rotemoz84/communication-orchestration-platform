@@ -7,7 +7,8 @@ http://localhost:3003/api
 ```
 
 `BASE_PATH` may prepend all routes in hosted deployments. Auth, inquiries,
-and `/admin` are mounted only after the server has connected to PostgreSQL.
+call history, and `/admin` are mounted only after the server has connected to
+PostgreSQL.
 
 ## Public Website Flow
 
@@ -75,15 +76,15 @@ returns `409` if a requested slot is no longer available.
 ## Call History
 
 `/calls` exposes the inbound IVR call record history and reporting endpoints.
-These routes currently do not use admin session protection.
+All routes in this section require an authenticated admin session.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/calls` | List records with date/outcome/office filters |
-| `GET` | `/calls/recent` | List recent calls with optional filters |
-| `GET` | `/calls/stats?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD` | Aggregate call statistics |
-| `GET` | `/calls/:id` | Read one call record |
-| `PATCH` | `/calls/:id` | Change notes or outcome |
+| `GET` | `/calls` | List records with date/outcome/office filters; authentication required |
+| `GET` | `/calls/recent` | List recent calls with optional filters; authentication required |
+| `GET` | `/calls/stats?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD` | Aggregate call statistics; authentication required |
+| `GET` | `/calls/:id` | Read one call record; authentication required |
+| `PATCH` | `/calls/:id` | Change notes or outcome; authentication required |
 
 `POST /voice/incoming` is the active Telnyx TeXML inbound entry point. It
 records the incoming call using the provider-neutral `providerCallId`, returns

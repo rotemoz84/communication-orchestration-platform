@@ -6,6 +6,10 @@
 const express = require('express');
 const router = express.Router();
 const callRepository = require('../dal/repositories/callRepository');
+const { requireAuth } = require('../middleware/requireAuth');
+
+// Call history includes caller contact data and is available only to admins.
+router.use(requireAuth);
 
 /**
  * GET /api/calls

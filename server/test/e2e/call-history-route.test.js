@@ -28,6 +28,10 @@ before(async () => {
 
     const app = express();
     app.use(express.json());
+    app.use((req, res, next) => {
+        req.session = req.get('x-test-auth') === 'admin' ? { userId: 7 } : {};
+        next();
+    });
     app.use('/api/calls', require('../../routes/calls'));
     server = await new Promise(resolve => {
         const listening = app.listen(0, '127.0.0.1', () => resolve(listening));
@@ -47,9 +51,18 @@ after(async () => {
     }
 });
 
-test('call history reporting remains available for inbound IVR calls', async () => {
-    const response = await fetch(
+test('call history reporting requires an authenticated admin session', async () => {
+    const unauthenticated = await fetch(
         `${baseUrl}/api/calls/stats?startDate=2026-05-26&endDate=2026-05-27`
+    );
+    const unauthenticatedBody = await unauthenticated.json();
+
+    assert.equal(unauthenticated.status, 401);
+    assert.equal(unauthenticatedBody.code, 'LOGIN_REQUIRED');
+
+    const response = await fetch(
+        `${baseUrl}/api/calls/stats?startDate=2026-05-26&endDate=2026-05-27`,
+        { headers: { 'x-test-auth': 'admin' } }
     );
     const body = await response.json();
 
@@ -62,7 +75,7 @@ test('call history reporting remains available for inbound IVR calls', async () 
 test('standalone outbound call initiation is not exposed', async () => {
     const response = await fetch(`${baseUrl}/api/calls/outgoing`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-test-auth': 'admin' },
         body: JSON.stringify({ to: '+972501111111' })
     });
 

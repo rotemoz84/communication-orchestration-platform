@@ -99,10 +99,8 @@ app.use(BASE_PATH + '/api/ivr', ivrRoutes);
 // WhatsApp routes (disabled pending Meta implementation)
 app.use(BASE_PATH + '/api/whatsapp', whatsappRoutes);
 
-// Call records API
-app.use(BASE_PATH + '/api/calls', callRoutes);
-
-// Inquiries API: mounted after session in startServer() so auth works for admin endpoints
+// Inquiry and call-record APIs are mounted after session in startServer()
+// so protected administration endpoints can authenticate requests.
 
 // ============================================
 // Admin/Management Endpoints
@@ -183,6 +181,7 @@ async function startServer() {
             }));
             app.use(BASE_PATH + '/api/auth', authRoutes);
             app.use(BASE_PATH + '/api/inquiries', inquiryRoutes);
+            app.use(BASE_PATH + '/api/calls', callRoutes);
 
             // Admin SPA: serve static files and SPA fallback
             const adminPath = path.join(__dirname, 'public', 'admin');
