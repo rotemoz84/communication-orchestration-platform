@@ -26,7 +26,8 @@ try {
     callRoutes = express.Router();
 }
 const inquiryRoutes = require('./routes/inquiries');
-const ivrRoutes = require('./ivr/routes');
+const voiceRoutes = require('./ivr/routes');
+const ivrAdminRoutes = voiceRoutes.adminRouter;
 
 // Google Integrations (Calendar Sync)
 const { 
@@ -91,10 +92,7 @@ app.get(BASE_PATH + '/api/health', (req, res) => {
 app.use(BASE_PATH + '/api/booking', bookingRoutes);
 
 // Voice/IVR routes
-app.use(BASE_PATH + '/api/voice', ivrRoutes);
-
-// IVR control routes
-app.use(BASE_PATH + '/api/ivr', ivrRoutes);
+app.use(BASE_PATH + '/api/voice', voiceRoutes);
 
 // WhatsApp routes (disabled pending Meta implementation)
 app.use(BASE_PATH + '/api/whatsapp', whatsappRoutes);
@@ -182,6 +180,7 @@ async function startServer() {
             app.use(BASE_PATH + '/api/auth', authRoutes);
             app.use(BASE_PATH + '/api/inquiries', inquiryRoutes);
             app.use(BASE_PATH + '/api/calls', callRoutes);
+            app.use(BASE_PATH + '/api/ivr', ivrAdminRoutes);
 
             // Admin SPA: serve static files and SPA fallback
             const adminPath = path.join(__dirname, 'public', 'admin');

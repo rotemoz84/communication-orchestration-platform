@@ -42,6 +42,8 @@ Submission surfaces:
   retention and external-copy cleanup are not implemented.
 - Administrative access exists, but a documented access/change audit trail is
   not yet implemented.
+- IVR administration routes require an authenticated session. Public voice
+  webhook routes do not expose IVR settings or live queue caller details.
 - Data may be stored in both PostgreSQL and PHP-generated CSV/email delivery;
   operational ownership and deletion handling must cover all locations.
 

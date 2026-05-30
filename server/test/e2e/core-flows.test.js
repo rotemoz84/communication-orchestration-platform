@@ -128,7 +128,7 @@ before(async () => {
     const authRoutes = requireFresh('../../routes/auth');
     const bookingRoutes = requireFresh('../../routes/booking');
     const inquiryRoutes = requireFresh('../../routes/inquiries');
-    const ivrRoutes = requireFresh('../../ivr/routes');
+    const voiceRoutes = requireFresh('../../ivr/routes');
     const whatsappRoutes = requireFresh('../../routes/whatsapp');
 
     const app = express();
@@ -158,8 +158,8 @@ before(async () => {
     app.use('/api/auth', authRoutes);
     app.use('/api/booking', bookingRoutes);
     app.use('/api/inquiries', inquiryRoutes);
-    app.use('/api/voice', ivrRoutes);
-    app.use('/api/ivr', ivrRoutes);
+    app.use('/api/voice', voiceRoutes);
+    app.use('/api/ivr', voiceRoutes.adminRouter);
     app.use('/api/whatsapp', whatsappRoutes);
     app.use((error, req, res, next) => {
         res.status(error.status || 500).json({ error: error.message });
@@ -362,9 +362,36 @@ test('pending voice callbacks and WhatsApp entry points remain disabled during m
     assert.equal(whatsapp.body.phase, 'deferred');
 });
 
-test('IVR settings do not expose the deferred WhatsApp fallback switch', async () => {
+test('IVR administration requires login and settings omit live queue details', async () => {
+    const unauthenticated = await request('/api/ivr/settings', {
+        method: 'POST',
+        body: JSON.stringify({
+            whatsappFallback: true
+        })
+    });
+
+    assert.equal(unauthenticated.response.status, 401);
+
+    const unauthenticatedQueue = await request('/api/ivr/queue');
+    assert.equal(unauthenticatedQueue.response.status, 401);
+
+    const publicVoiceAlias = await fetch(`${baseUrl}/api/voice/settings`);
+    assert.equal(publicVoiceAlias.status, 404);
+
+    const publicVoiceQueueAlias = await fetch(`${baseUrl}/api/voice/queue`);
+    assert.equal(publicVoiceQueueAlias.status, 404);
+
+    const login = await request('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({
+            email: 'admin@example.test',
+            password: 'correct-password'
+        })
+    });
+    const sessionId = login.response.headers.get('x-test-session');
     const update = await request('/api/ivr/settings', {
         method: 'POST',
+        headers: { 'x-test-session': sessionId },
         body: JSON.stringify({
             whatsappFallback: true
         })
@@ -372,4 +399,5 @@ test('IVR settings do not expose the deferred WhatsApp fallback switch', async (
 
     assert.equal(update.response.status, 200);
     assert.equal(Object.hasOwn(update.body.settings, 'whatsappFallback'), false);
+    assert.equal(Object.hasOwn(update.body.settings, 'currentQueue'), false);
 });

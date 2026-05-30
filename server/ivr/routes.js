@@ -19,6 +19,7 @@ const {
     texmlSay
 } = require('../integrations/telnyx/voice');
 const { getMessage } = require('./messages');
+const { requireAuth } = require('../middleware/requireAuth');
 const {
     addToQueue,
     getIvrSettings,
@@ -30,7 +31,10 @@ const {
     updateIvrSettings
 } = require('./service');
 
-const router = express.Router();
+const voiceRouter = express.Router();
+const adminRouter = express.Router();
+
+adminRouter.use(requireAuth);
 
 const VOICE_WEBHOOK_PATHS = [
     '/status'
@@ -48,7 +52,7 @@ function voiceMigrationPending(req, res) {
  * Main Telnyx TeXML entry point for inbound calls.
  * POST /api/voice/incoming
  */
-router.post('/incoming', async (req, res) => {
+voiceRouter.post('/incoming', async (req, res) => {
     const webhook = normalizeTeXMLWebhook(req.body);
     const callerNumber = webhook.from || 'unknown';
 
@@ -101,7 +105,7 @@ router.post('/incoming', async (req, res) => {
  * Handle the outcome of dialing the representative during open hours.
  * POST /api/voice/dial-callback
  */
-router.post('/dial-callback', async (req, res) => {
+voiceRouter.post('/dial-callback', async (req, res) => {
     const webhook = normalizeTeXMLWebhook(req.body);
     const representativeAnswered = webhook.dialStatus === 'completed';
 
@@ -191,24 +195,24 @@ function createFollowUpMenuHandler(reason, requestedOutcome) {
     };
 }
 
-router.post(
+voiceRouter.post(
     '/closed-menu',
     createFollowUpMenuHandler('closed_hours', CALL_OUTCOMES.CLOSED_HOURS_FOLLOWUP_REQUESTED)
 );
-router.post(
+voiceRouter.post(
     '/no-answer-menu',
     createFollowUpMenuHandler('no_answer', CALL_OUTCOMES.REPRESENTATIVE_UNAVAILABLE_FOLLOWUP_REQUESTED)
 );
 
 VOICE_WEBHOOK_PATHS.forEach(path => {
-    router.post(path, voiceMigrationPending);
+    voiceRouter.post(path, voiceMigrationPending);
 });
 
 /**
  * Update IVR settings.
  * POST /api/ivr/settings
  */
-router.post('/settings', (req, res) => {
+adminRouter.post('/settings', (req, res) => {
     try {
         const newSettings = req.body;
 
@@ -230,7 +234,7 @@ router.post('/settings', (req, res) => {
  * Get current IVR settings.
  * GET /api/ivr/settings
  */
-router.get('/settings', (req, res) => {
+adminRouter.get('/settings', (req, res) => {
     try {
         return res.json({
             success: true,
@@ -246,7 +250,7 @@ router.get('/settings', (req, res) => {
  * Toggle emergency mode.
  * POST /api/ivr/emergency
  */
-router.post('/emergency', (req, res) => {
+adminRouter.post('/emergency', (req, res) => {
     try {
         const { enabled } = req.body;
 
@@ -268,7 +272,7 @@ router.post('/emergency', (req, res) => {
  * Get current queue status.
  * GET /api/ivr/queue
  */
-router.get('/queue', (req, res) => {
+adminRouter.get('/queue', (req, res) => {
     try {
         return res.json({
             success: true,
@@ -284,7 +288,7 @@ router.get('/queue', (req, res) => {
  * Add a caller to the in-memory queue for testing.
  * POST /api/ivr/queue/add
  */
-router.post('/queue/add', (req, res) => {
+adminRouter.post('/queue/add', (req, res) => {
     try {
         const { callerNumber, callId } = req.body;
 
@@ -307,7 +311,7 @@ router.post('/queue/add', (req, res) => {
  * Remove a caller from the in-memory queue.
  * POST /api/ivr/queue/remove
  */
-router.post('/queue/remove', (req, res) => {
+adminRouter.post('/queue/remove', (req, res) => {
     try {
         const { callId } = req.body;
 
@@ -330,7 +334,7 @@ router.post('/queue/remove', (req, res) => {
  * Get office status for IVR administration.
  * GET /api/ivr/status
  */
-router.get('/status', async (req, res) => {
+adminRouter.get('/status', async (req, res) => {
     try {
         const officeOpen = await isOfficeOpen();
         const officeStatus = await getOfficeStatus();
@@ -348,4 +352,5 @@ router.get('/status', async (req, res) => {
     }
 });
 
-module.exports = router;
+module.exports = voiceRouter;
+module.exports.adminRouter = adminRouter;

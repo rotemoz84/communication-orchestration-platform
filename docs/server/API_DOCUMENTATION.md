@@ -116,7 +116,8 @@ WhatsApp is intentionally deferred to a future Meta implementation. Existing
 paths under `/whatsapp` such as `/send`, `/incoming`, `/status`, and `/test`
 return `501` and have no sending or receiving side effects.
 
-Preferred IVR administration routes remain available under `/ivr`:
+Preferred IVR administration routes remain available under `/ivr`. All require
+an authenticated admin session and are not exposed as aliases under `/voice`:
 
 | Method | Path | Purpose |
 | --- | --- | --- |

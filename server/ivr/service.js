@@ -117,18 +117,22 @@ function updateIvrSettings(newSettings) {
     for (const [key, value] of Object.entries(newSettings)) {
         if (allowedKeys.includes(key)) {
             ivrSettings[key] = value;
-            console.log(`🔧 IVR setting updated: ${key} = ${value}`);
+            console.log(`🔧 IVR setting updated: ${key}`);
         }
     }
     
-    return ivrSettings;
+    return getIvrSettings();
 }
 
 /**
  * Get current IVR settings
  */
 function getIvrSettings() {
-    return { ...ivrSettings };
+    const { currentQueue, ...settings } = ivrSettings;
+    return {
+        ...settings,
+        currentQueueSize: currentQueue.length
+    };
 }
 
 /**
