@@ -37,10 +37,10 @@ There is also a PHP submission endpoint at `site_clinic/src/contact.php`,
 deployed as `https://drozyuval.com/contact.php`. It logs submissions to CSV
 and sends an email through PHP hosting configuration.
 
-Important current behavior: the React form calls the PHP endpoint even after a
-successful main API response as a temporary email backup. This can create two
-records/notifications for one submission; do not remove or change that
-behavior without deciding how inquiry notification delivery should work.
+The React form calls the PHP endpoint only when the main API request fails or
+returns an unsuccessful response. Successful main API submissions stay in
+PostgreSQL and are included in the Node daily-summary email without creating a
+second hosting-side CSV/email copy.
 
 ## Product And Design Intent
 

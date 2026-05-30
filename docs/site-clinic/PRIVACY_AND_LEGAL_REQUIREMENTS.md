@@ -34,10 +34,10 @@ Submission surfaces:
   accepted flags with the `2026-02` policy version and a server timestamp.
 - Request metadata such as IP address and user agent is not persisted. Decide
   whether collecting it would be necessary and proportionate.
-- The PHP backup behavior may create duplicate records or notifications after a
-  main API success.
-- Retention and deletion procedures are stated in user-facing copy but are not
-  implemented as automated lifecycle controls in this repository.
+- Successful Node intake no longer invokes the PHP fallback, avoiding the
+  previous duplicate CSV/email copy for the normal submission path.
+- A restricted-operator personal-data lifecycle runbook exists, but automated
+  retention and external-copy cleanup are not implemented.
 - Administrative access exists, but a documented access/change audit trail is
   not yet implemented.
 - Data may be stored in both PostgreSQL and PHP-generated CSV/email delivery;
@@ -84,8 +84,8 @@ Implementation work still needed:
 - Review stored consent evidence whenever the published privacy-policy revision
   changes and update the server-side version key with the public copy.
 - Decide whether IP/user-agent logging is necessary and proportionate.
-- Establish deletion/access request procedures across database, CSV, and email
-  copies.
+- Approve and operationalize the deletion/access runbook in
+  `docs/site-clinic/PERSONAL_DATA_LIFECYCLE.md`.
 - Review the Hebrew user-visible policy in
   `site_clinic/src/translations/texts.ts` against the final operational process
   and legal advice.

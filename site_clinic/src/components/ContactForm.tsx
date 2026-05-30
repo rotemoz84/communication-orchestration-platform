@@ -106,11 +106,6 @@ const ContactForm = ({ id = "contact", showTitle = true }: { id?: string; showTi
                     setFormData({ name: '', phone: '', email: '', service: '', week: '', message: '', privacyConsent: false, sensitiveDataConsent: false, callbackConsent: false });
                     console.log('✅ Form submitted successfully using MAIN API system');
                     console.log('Main API successful:', result);
-         
-                    /* to be removed after fixed error in send-daily-summary-report */
-                    console.log('Sending email as a temporary backup. to be removed after fixed error in daily summary sending' );
-                    await tryPHPFallback();
-         
                 } else {
                     // If main API returns success=false, try PHP fallback
                     console.error('Main API returned success=false:', result);

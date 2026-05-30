@@ -11,10 +11,10 @@ The React contact form submits to the main inquiry API first:
 https://api.drozyuval.com/api/inquiries
 ```
 
-The PHP endpoint is called as a fallback when the API request fails. It is
-also currently called after a successful API response as a temporary email
-backup. That second behavior can duplicate lead notifications or storage and
-should be resolved deliberately when the daily-summary/email flow is reliable.
+The PHP endpoint is called only as a fallback when the API request fails or
+returns an unsuccessful response. A successful main API submission does not
+create a PHP CSV/email copy. A duplicate remains possible if the main API stores
+the inquiry but its success response is lost before reaching the browser.
 
 ## Input And Output
 
