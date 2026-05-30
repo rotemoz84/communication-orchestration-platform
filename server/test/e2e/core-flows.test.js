@@ -186,7 +186,7 @@ after(async () => {
     restorers.reverse().forEach(restore => restore());
 });
 
-test('public lead capture requires contact details and records a valid website inquiry', async () => {
+test('public lead capture requires contact details and consent evidence', async () => {
     const missingContact = await request('/api/inquiries', {
         method: 'POST',
         body: JSON.stringify({ name: 'No contact provided' })
@@ -196,6 +196,31 @@ test('public lead capture requires contact details and records a valid website i
     assert.equal(missingContact.body.error, 'Phone or email is required');
     assert.equal(createdInquiries.length, 0);
 
+    const missingPrivacyConsent = await request('/api/inquiries', {
+        method: 'POST',
+        body: JSON.stringify({ phone: '0501234567' })
+    });
+
+    assert.equal(missingPrivacyConsent.response.status, 400);
+    assert.equal(missingPrivacyConsent.body.error, 'Privacy consent is required');
+    assert.equal(createdInquiries.length, 0);
+
+    const missingSensitiveDataConsent = await request('/api/inquiries', {
+        method: 'POST',
+        body: JSON.stringify({
+            phone: '0501234567',
+            week: '12',
+            privacyConsent: true
+        })
+    });
+
+    assert.equal(missingSensitiveDataConsent.response.status, 400);
+    assert.equal(
+        missingSensitiveDataConsent.body.error,
+        'Sensitive data consent is required when pregnancy week is provided'
+    );
+    assert.equal(createdInquiries.length, 0);
+
     const accepted = await request('/api/inquiries', {
         method: 'POST',
         body: JSON.stringify({
@@ -203,7 +228,9 @@ test('public lead capture requires contact details and records a valid website i
             phone: '0501234567',
             service: 'Consultation',
             week: '12',
-            message: 'Please call'
+            message: 'Please call',
+            privacyConsent: true,
+            sensitiveDataConsent: true
         })
     });
 
@@ -212,6 +239,21 @@ test('public lead capture requires contact details and records a valid website i
     assert.equal(createdInquiries.length, 1);
     assert.equal(createdInquiries[0].source, 'website');
     assert.equal(createdInquiries[0].phone, '0501234567');
+    assert.equal(createdInquiries[0].privacyConsent, true);
+    assert.equal(createdInquiries[0].sensitiveDataConsent, true);
+    assert.equal(createdInquiries[0].consentPolicyVersion, '2026-02');
+    assert.equal(createdInquiries[0].consentRecordedAt instanceof Date, true);
+
+    const acceptedWithoutPregnancyWeek = await request('/api/inquiries', {
+        method: 'POST',
+        body: JSON.stringify({
+            email: 'patient@example.test',
+            privacyConsent: true
+        })
+    });
+
+    assert.equal(acceptedWithoutPregnancyWeek.response.status, 201);
+    assert.equal(createdInquiries[1].sensitiveDataConsent, false);
 });
 
 test('admin inquiry listing is blocked without login and available after login', async () => {

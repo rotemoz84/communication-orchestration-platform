@@ -29,19 +29,29 @@ async function create(inquiryData) {
             service = null,
             week = null,
             message = null,
-            source = 'website'
+            source = 'website',
+            privacyConsent = null,
+            sensitiveDataConsent = null,
+            consentPolicyVersion = null,
+            consentRecordedAt = null
         } = inquiryData;
 
         const sql = `
-            INSERT INTO inquiries (inquiry_id, name, phone, email, service, pregnancy_week, message, source)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            INSERT INTO inquiries (
+                inquiry_id, name, phone, email, service, pregnancy_week, message, source,
+                privacy_consent, sensitive_data_consent, consent_policy_version, consent_recorded_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
             RETURNING *
         `;
 
         // Handle pregnancy week - only convert if it's a valid number
         const parsedWeek = week ? parseInt(week) : null;
         const pregnancyWeek = (parsedWeek && !isNaN(parsedWeek)) ? parsedWeek : null;
-        const result = await query(sql, [inquiryId, name, phone, email, service, pregnancyWeek, message, source]);
+        const result = await query(sql, [
+            inquiryId, name, phone, email, service, pregnancyWeek, message, source,
+            privacyConsent, sensitiveDataConsent, consentPolicyVersion, consentRecordedAt
+        ]);
 
         console.log(`📝 Inquiry saved: ${inquiryId} from ${phone || email}`);
         return mapRowToInquiry(result[0]);
@@ -291,6 +301,10 @@ function mapRowToInquiry(row) {
         pregnancyWeek: row.pregnancy_week,
         message: row.message,
         source: row.source,
+        privacyConsent: row.privacy_consent,
+        sensitiveDataConsent: row.sensitive_data_consent,
+        consentPolicyVersion: row.consent_policy_version,
+        consentRecordedAt: row.consent_recorded_at,
         status: row.status,
         notes: row.notes,
         createdAt: row.created_at,

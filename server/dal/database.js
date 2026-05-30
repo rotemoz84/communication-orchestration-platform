@@ -187,11 +187,23 @@ async function createTables() {
                 pregnancy_week INTEGER,
                 message TEXT,
                 source VARCHAR(50) DEFAULT 'website',
+                privacy_consent BOOLEAN DEFAULT NULL,
+                sensitive_data_consent BOOLEAN DEFAULT NULL,
+                consent_policy_version VARCHAR(20) DEFAULT NULL,
+                consent_recorded_at TIMESTAMPTZ DEFAULT NULL,
                 status VARCHAR(20) DEFAULT 'new',
                 notes TEXT,
                 created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
             )
+        `);
+
+        // Migration: preserve historical rows while recording consent evidence for new inquiries.
+        await pool.query(`
+            ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS privacy_consent BOOLEAN DEFAULT NULL;
+            ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS sensitive_data_consent BOOLEAN DEFAULT NULL;
+            ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS consent_policy_version VARCHAR(20) DEFAULT NULL;
+            ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS consent_recorded_at TIMESTAMPTZ DEFAULT NULL;
         `);
 
         // Create indexes for inquiries

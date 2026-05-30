@@ -23,17 +23,19 @@ The PHP endpoint accepts JSON fields:
 | Field | Requirement |
 | --- | --- |
 | `name` | Optional |
-| `phone` | Expected when `email` is absent; not enforced in PHP today |
-| `email` | Expected when `phone` is absent; not enforced in PHP today |
+| `phone` | Required when `email` is absent |
+| `email` | Required when `phone` is absent |
 | `service` | Optional |
 | `week` | Optional; pregnancy-related sensitive data |
 | `message` | Optional |
+| `privacyConsent` | Required boolean `true` |
+| `sensitiveDataConsent` | Required boolean `true` when `week` is supplied |
 
-The React form enforces the phone-or-email rule. The PHP endpoint currently
-accepts any valid JSON object, logs a CSV record, and sends an HTML email when
-hosting mail is configured. Adding equivalent server-side validation and
-consent persistence is still required before treating it as an independent
-compliant intake path. Responses are JSON:
+The React form and PHP endpoint both enforce these intake rules. The PHP
+endpoint stores accepted consent flags, the `2026-02` policy version, and a
+server-side timestamp in its CSV output. Existing historical CSV rows are
+preserved with blank evidence fields when the header is upgraded. Responses are
+JSON:
 
 - `200` on a successful save/send attempt.
 - `400` for invalid input.
@@ -47,14 +49,15 @@ When deploying the static site, publish the PHP endpoint beside the built site
 so it is reachable at `/contact.php`, and ensure its directory can write the
 CSV file and the host supports PHP mail delivery.
 
-The CSV data is expected to include timestamp, name, phone, email, service,
-week, and message columns. Treat this file as containing personal and possibly
-sensitive medical-related information.
+The CSV data includes timestamp, name, phone, email, service, week, message,
+consent flags, consent policy version, and consent-recorded timestamp columns.
+Treat this file as containing personal and possibly sensitive medical-related
+information.
 
 ## Manual Check
 
 ```bash
 curl -X POST https://drozyuval.com/contact.php \
   -H "Content-Type: application/json" \
-  -d '{"name":"Test","phone":"0501234567","week":"12","message":"Test request"}'
+  -d '{"name":"Test","phone":"0501234567","week":"12","message":"Test request","privacyConsent":true,"sensitiveDataConsent":true}'
 ```

@@ -38,6 +38,9 @@ const INQUIRY_SOURCE = {
     MANUAL: 'manual'
 };
 
+// Published privacy-policy revision accepted by the website inquiry form.
+const INQUIRY_CONSENT_POLICY_VERSION = '2026-02';
+
 // Preferred callback times
 const PREFERRED_TIME = {
     MORNING: 'morning',      // 08:00-12:00
@@ -96,6 +99,7 @@ module.exports = {
     OFFICE_STATUS,
     APPOINTMENT_STATUS,
     INQUIRY_SOURCE,
+    INQUIRY_CONSENT_POLICY_VERSION,
     PREFERRED_TIME,
     BOT_STATES,
     CACHE_DURATION,

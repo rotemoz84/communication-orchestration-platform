@@ -21,11 +21,16 @@ PostgreSQL.
   "email": "",
   "service": "Consultation",
   "week": "12",
-  "message": "Please call"
+  "message": "Please call",
+  "privacyConsent": true,
+  "sensitiveDataConsent": true
 }
 ```
 
-At least one of `phone` or `email` is required. A successful response is:
+At least one of `phone` or `email` and explicit `privacyConsent` are required.
+When `week` is provided, explicit `sensitiveDataConsent` is also required. The
+server stores the accepted consent flags with its current policy version and a
+server-side timestamp. A successful response is:
 
 ```json
 { "success": true, "inquiryId": "INQ-..." }

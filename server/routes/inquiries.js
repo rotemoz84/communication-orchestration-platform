@@ -10,6 +10,11 @@ const express = require('express');
 const router = express.Router();
 const inquiryRepository = require('../dal/repositories/inquiryRepository');
 const { requireAuth } = require('../middleware/requireAuth');
+const { INQUIRY_CONSENT_POLICY_VERSION } = require('../constants');
+
+function hasSubmittedValue(value) {
+    return value !== undefined && value !== null && String(value).trim() !== '';
+}
 
 /**
  * POST /api/inquiries
@@ -18,12 +23,36 @@ const { requireAuth } = require('../middleware/requireAuth');
  */
 router.post('/', async (req, res) => {
     try {
-        const { name, phone, email, service, week, message } = req.body;
+        const {
+            name,
+            phone,
+            email,
+            service,
+            week,
+            message,
+            privacyConsent,
+            sensitiveDataConsent
+        } = req.body;
+        const hasPhone = hasSubmittedValue(phone);
+        const hasEmail = hasSubmittedValue(email);
+        const hasPregnancyWeek = hasSubmittedValue(week);
 
         // Validation: Either phone or email must be provided
-        if (!phone && !email) {
+        if (!hasPhone && !hasEmail) {
             return res.status(400).json({ 
                 error: 'Phone or email is required' 
+            });
+        }
+
+        if (privacyConsent !== true) {
+            return res.status(400).json({
+                error: 'Privacy consent is required'
+            });
+        }
+
+        if (hasPregnancyWeek && sensitiveDataConsent !== true) {
+            return res.status(400).json({
+                error: 'Sensitive data consent is required when pregnancy week is provided'
             });
         }
 
@@ -34,7 +63,11 @@ router.post('/', async (req, res) => {
             service,
             week,
             message,
-            source: 'website'
+            source: 'website',
+            privacyConsent: true,
+            sensitiveDataConsent: hasPregnancyWeek ? true : false,
+            consentPolicyVersion: INQUIRY_CONSENT_POLICY_VERSION,
+            consentRecordedAt: new Date()
         });
 
         console.log(`✅ New website inquiry: ${inquiry.inquiryId} (will be included in daily summary)`);

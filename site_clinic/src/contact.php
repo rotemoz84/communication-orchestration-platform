@@ -4,13 +4,68 @@
  * Unified version with CSV logging, HTML email notification, and proper CORS support
  * 
  * This file serves as a backup workaround when API services are not working correctly.
- * The frontend (ContactForm.tsx) already performs validation, so minimal validation is needed here.
+ * Validation is enforced here as well as in the frontend because this endpoint is public.
  */
 
 // --- Configuration ---
 $RECIPIENT_EMAIL = '6801552@gmail.com';
 $CSV_FILENAME = 'leads.csv';
 $SITE_NAME = 'Dr. Yuval Oz Clinic';
+$PRIVACY_POLICY_VERSION = '2026-02';
+$CSV_HEADERS = [
+    'Timestamp', 'Name', 'Phone', 'Email', 'Service', 'Week', 'Message',
+    'Privacy Consent', 'Sensitive Data Consent', 'Consent Policy Version',
+    'Consent Recorded At'
+];
+
+function respondWithError($statusCode, $message) {
+    http_response_code($statusCode);
+    echo json_encode(['success' => false, 'message' => $message]);
+    exit();
+}
+
+function hasSubmittedValue($data, $key) {
+    return isset($data[$key]) && trim((string) $data[$key]) !== '';
+}
+
+function appendCsvRow($filename, $headers, $row) {
+    $fileHandle = fopen($filename, 'c+');
+    if ($fileHandle === false) {
+        throw new Exception('Unable to open CSV file for writing');
+    }
+
+    if (!flock($fileHandle, LOCK_EX)) {
+        fclose($fileHandle);
+        throw new Exception('Unable to lock CSV file for writing');
+    }
+
+    rewind($fileHandle);
+    $existingRows = [];
+    while (($existingRow = fgetcsv($fileHandle)) !== false) {
+        $existingRows[] = $existingRow;
+    }
+
+    $hasCurrentHeader = count($existingRows) > 0
+        && in_array('Privacy Consent', $existingRows[0], true);
+
+    if (count($existingRows) === 0 || !$hasCurrentHeader) {
+        $historicalRows = count($existingRows) > 0 ? array_slice($existingRows, 1) : [];
+        ftruncate($fileHandle, 0);
+        rewind($fileHandle);
+        fprintf($fileHandle, chr(0xEF).chr(0xBB).chr(0xBF));
+        fputcsv($fileHandle, $headers);
+
+        foreach ($historicalRows as $historicalRow) {
+            fputcsv($fileHandle, array_pad($historicalRow, count($headers), ''));
+        }
+    }
+
+    fseek($fileHandle, 0, SEEK_END);
+    fputcsv($fileHandle, $row);
+    fflush($fileHandle);
+    flock($fileHandle, LOCK_UN);
+    fclose($fileHandle);
+}
 
 // --- CORS and Headers ---
 header('Content-Type: application/json; charset=utf-8');
@@ -36,9 +91,24 @@ $inputJSON = file_get_contents('php://input');
 $data = json_decode($inputJSON, true);
 
 if (!$data) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Invalid JSON data']);
-    exit();
+    respondWithError(400, 'Invalid JSON data');
+}
+
+// --- Server-side Intake Validation ---
+$hasPhone = hasSubmittedValue($data, 'phone');
+$hasEmail = hasSubmittedValue($data, 'email');
+$hasPregnancyWeek = hasSubmittedValue($data, 'week');
+$privacyConsent = isset($data['privacyConsent']) && $data['privacyConsent'] === true;
+$sensitiveDataConsent = isset($data['sensitiveDataConsent']) && $data['sensitiveDataConsent'] === true;
+
+if (!$hasPhone && !$hasEmail) {
+    respondWithError(400, 'Phone or email is required');
+}
+if (!$privacyConsent) {
+    respondWithError(400, 'Privacy consent is required');
+}
+if ($hasPregnancyWeek && !$sensitiveDataConsent) {
+    respondWithError(400, 'Sensitive data consent is required when pregnancy week is provided');
 }
 
 // --- Data Extraction and Sanitization ---
@@ -49,24 +119,17 @@ $service = isset($data['service']) ? htmlspecialchars(trim($data['service']), EN
 $week    = isset($data['week']) ? htmlspecialchars(trim($data['week']), ENT_QUOTES, 'UTF-8') : 'לא צויין';
 $message = isset($data['message']) ? htmlspecialchars(trim($data['message']), ENT_QUOTES, 'UTF-8') : 'ללא הודעה';
 $timestamp = date('Y-m-d H:i:s');
+$consentRecordedAt = date('c');
 
 try {
     // --- 1. Log to CSV (Database) ---
-    $isNewFile = !file_exists($CSV_FILENAME);
-    $fileHandle = fopen($CSV_FILENAME, 'a');
-
-    if ($fileHandle === false) {
-        throw new Exception('Unable to open CSV file for writing');
-    }
-
-    // Add BOM for Hebrew support in Excel
-    if ($isNewFile) {
-        fprintf($fileHandle, chr(0xEF).chr(0xBB).chr(0xBF));
-        fputcsv($fileHandle, ['Timestamp', 'Name', 'Phone', 'Email', 'Service', 'Week', 'Message']);
-    }
-
-    fputcsv($fileHandle, [$timestamp, $name, $phone, $email, $service, $week, $message]);
-    fclose($fileHandle);
+    appendCsvRow($CSV_FILENAME, $CSV_HEADERS, [
+        $timestamp, $name, $phone, $email, $service, $week, $message,
+        $privacyConsent ? 'true' : 'false',
+        $sensitiveDataConsent ? 'true' : 'false',
+        $PRIVACY_POLICY_VERSION,
+        $consentRecordedAt
+    ]);
 
     // --- 2. Send HTML Email Notification ---
     $subject = "פנייה חדשה מאתר ד\"ר יובל עוז: $name";

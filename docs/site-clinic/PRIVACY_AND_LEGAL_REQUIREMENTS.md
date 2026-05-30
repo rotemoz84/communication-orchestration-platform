@@ -29,11 +29,11 @@ Submission surfaces:
 
 ## Current Gaps To Resolve
 
-- The React form includes consent values in its payload, but the Node inquiry
-  repository does not currently persist consent flags, consent wording,
-  timestamps, or request metadata.
-- The PHP endpoint logs inquiry fields but does not currently persist submitted
-  consent flags or independently enforce the frontend contact/consent rules.
+- Node and PHP intake paths now require general privacy consent, separately
+  require sensitive-data consent when pregnancy week is supplied, and store
+  accepted flags with the `2026-02` policy version and a server timestamp.
+- Request metadata such as IP address and user agent is not persisted. Decide
+  whether collecting it would be necessary and proportionate.
 - The PHP backup behavior may create duplicate records or notifications after a
   main API success.
 - Retention and deletion procedures are stated in user-facing copy but are not
@@ -81,8 +81,8 @@ Keep the following behavior in the public flow:
 
 Implementation work still needed:
 
-- Store proof of consent with each inquiry, including relevant consent flags,
-  policy/version reference, and submission timestamp.
+- Review stored consent evidence whenever the published privacy-policy revision
+  changes and update the server-side version key with the public copy.
 - Decide whether IP/user-agent logging is necessary and proportionate.
 - Establish deletion/access request procedures across database, CSV, and email
   copies.
