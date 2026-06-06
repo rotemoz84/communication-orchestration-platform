@@ -250,9 +250,72 @@ async function sendIvrFallbackNotification({
     }
 }
 
+/**
+ * Send an operational alert for a critical business-path failure.
+ * @param {Object} alert - Operational alert details
+ */
+async function sendCriticalAlertEmail(alert) {
+    if (!transporter) {
+        transporter = initializeEmailTransporter();
+        if (!transporter) {
+            console.log('Critical alert skipped: SMTP not configured');
+            return { success: false, error: 'Critical alert delivery unavailable' };
+        }
+    }
+
+    const recipientEmail = process.env.EMAIL_NOTIFICATION_TO;
+    const senderEmail = process.env.EMAIL_FROM;
+
+    if (!recipientEmail || !senderEmail) {
+        console.warn('Critical alert skipped: EMAIL_FROM or alert recipient not configured');
+        return { success: false, error: 'Critical alert delivery unavailable' };
+    }
+
+    const severity = (alert.severity || 'critical').toUpperCase();
+    const subject = `[${severity}] ${alert.title || 'Critical business-path failure'}`;
+    const contextText = alert.context && Object.keys(alert.context).length > 0
+        ? JSON.stringify(alert.context, null, 2)
+        : 'No additional context';
+    const errorText = alert.error
+        ? `${alert.error.name || 'Error'}: ${alert.error.message || 'Unknown error'}`
+        : 'No error object supplied';
+    const text = [
+        alert.title || 'Critical business-path failure',
+        '',
+        `Severity: ${alert.severity || 'critical'}`,
+        `Key: ${alert.key || 'not supplied'}`,
+        `Path: ${alert.path || 'not supplied'}`,
+        `Occurred at: ${alert.occurredAt || new Date().toISOString()}`,
+        '',
+        'Error:',
+        errorText,
+        '',
+        'Context:',
+        contextText,
+        '',
+        'This alert is rate-limited by issue key.'
+    ].join('\n');
+
+    try {
+        const info = await transporter.sendMail({
+            from: senderEmail,
+            to: recipientEmail,
+            subject,
+            text
+        });
+
+        console.log(`Critical alert email sent: ${info.messageId}`);
+        return { success: true, messageId: info.messageId };
+    } catch (error) {
+        console.error('Failed to send critical alert email:', error.message);
+        return { success: false, error: 'Critical alert delivery unavailable' };
+    }
+}
+
 module.exports = {
     initializeEmailTransporter,
     testEmailConnection,
     sendInquirySummaryEmail,
-    sendIvrFallbackNotification
+    sendIvrFallbackNotification,
+    sendCriticalAlertEmail
 };

@@ -11,6 +11,7 @@ const router = express.Router();
 const inquiryRepository = require('../dal/repositories/inquiryRepository');
 const { requireAuth } = require('../middleware/requireAuth');
 const { INQUIRY_CONSENT_POLICY_VERSION } = require('../constants');
+const { notifyCriticalFailure } = require('../services/criticalAlerts');
 
 const INQUIRY_FIELD_LIMITS = {
     name: 100,
@@ -38,6 +39,19 @@ function normalizePregnancyWeek(value) {
     }
 
     return normalizeOptionalText(value);
+}
+
+function getSubmittedInquiryData(body = {}) {
+    return {
+        name: normalizeOptionalText(body.name),
+        phone: normalizeOptionalText(body.phone),
+        email: normalizeOptionalText(body.email),
+        service: normalizeOptionalText(body.service),
+        week: normalizePregnancyWeek(body.week),
+        message: normalizeOptionalText(body.message),
+        privacyConsent: body.privacyConsent === true,
+        sensitiveDataConsent: body.sensitiveDataConsent === true
+    };
 }
 
 /**
@@ -128,6 +142,17 @@ router.post('/', async (req, res) => {
         });
     } catch (error) {
         console.error('Error creating inquiry:', error.message);
+        const body = req.body || {};
+        await notifyCriticalFailure({
+            key: 'inquiry:create:save_failed',
+            title: 'Website inquiry failed to save',
+            path: 'POST /api/inquiries',
+            error,
+            context: {
+                source: 'website',
+                lostData: getSubmittedInquiryData(body)
+            }
+        });
         res.status(500).json({ error: 'Failed to save inquiry' });
     }
 });

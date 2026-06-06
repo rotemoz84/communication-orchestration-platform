@@ -9,6 +9,23 @@ const adminRouter = express.Router();
 const { getBookingSettings, clearCache } = require('../integrations/google/sheets');
 const { getAvailableSlots, createBookingEvent } = require('../integrations/google/calendar');
 const { requireAuth } = require('../middleware/requireAuth');
+const { notifyCriticalFailure } = require('../services/criticalAlerts');
+
+function normalizeOptionalText(value) {
+    return typeof value === 'string' ? value.trim() || null : null;
+}
+
+function getSubmittedBookingData(body = {}) {
+    return {
+        name: normalizeOptionalText(body.name),
+        email: normalizeOptionalText(body.email),
+        phone: normalizeOptionalText(body.phone),
+        meetingTypeId: normalizeOptionalText(body.meetingTypeId),
+        date: normalizeOptionalText(body.date),
+        time: normalizeOptionalText(body.time),
+        message: normalizeOptionalText(body.message)
+    };
+}
 
 adminRouter.use(requireAuth);
 
@@ -29,6 +46,16 @@ router.get('/settings', async (req, res, next) => {
             lastUpdated: settings.lastUpdated
         });
     } catch (error) {
+        const body = req.body || {};
+        await notifyCriticalFailure({
+            key: 'booking:reserve:failed',
+            title: 'Booking reservation failed',
+            path: 'POST /api/booking/reserve',
+            error,
+            context: {
+                lostData: getSubmittedBookingData(body)
+            }
+        });
         next(error);
     }
 });

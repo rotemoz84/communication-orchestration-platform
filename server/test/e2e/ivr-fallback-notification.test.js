@@ -127,3 +127,38 @@ test('daily inquiry summary keeps its existing summary recipient', async () => {
     assert.equal(sentMessages[0].to, 'summary@example.test');
     assert.notEqual(sentMessages[0].to, process.env.IVR_FALLBACK_EMAIL_TO);
 });
+
+test('critical alert email uses the configured notification recipient', async () => {
+    const { sendCriticalAlertEmail } = loadEmailService();
+
+    const result = await sendCriticalAlertEmail({
+        key: 'inquiry:create:save_failed',
+        title: 'Website inquiry failed to save',
+        path: 'POST /api/inquiries',
+        severity: 'critical',
+        occurredAt: '2026-06-06T10:00:00.000Z',
+        error: {
+            name: 'Error',
+            message: 'Database unavailable'
+        },
+        context: {
+            lostData: {
+                name: 'Patient',
+                phone: '0501234567',
+                email: 'patient@example.test',
+                message: 'Please call'
+            }
+        }
+    });
+
+    assert.deepEqual(result, { success: true, messageId: 'message-1' });
+    assert.equal(sentMessages.length, 1);
+    assert.equal(sentMessages[0].to, 'summary@example.test');
+    assert.equal(sentMessages[0].subject, '[CRITICAL] Website inquiry failed to save');
+    assert.match(sentMessages[0].text, /Key: inquiry:create:save_failed/);
+    assert.match(sentMessages[0].text, /Path: POST \/api\/inquiries/);
+    assert.match(sentMessages[0].text, /Database unavailable/);
+    assert.match(sentMessages[0].text, /0501234567/);
+    assert.match(sentMessages[0].text, /patient@example\.test/);
+    assert.match(sentMessages[0].text, /Please call/);
+});

@@ -12,6 +12,7 @@
 const inquiryRepository = require('../dal/repositories/inquiryRepository');
 const jobStateRepository = require('../dal/repositories/jobStateRepository');
 const { sendInquirySummaryEmail } = require('../integrations/email');
+const { notifyCriticalFailure } = require('./criticalAlerts');
 
 const JOB_NAME = 'daily_inquiry_summary';
 const DEFAULT_LOOKBACK_HOURS = 72; // 3 days lookback if no previous run
@@ -52,7 +53,10 @@ async function sendDailySummary() {
         console.log(`📋 Found ${inquiries.length} inquiries to include in summary`);
         
         // Send the summary email (even if empty - to confirm the job ran)
-        await sendInquirySummaryEmail(inquiries, fromTimestamp, toTimestamp);
+        const emailSent = await sendInquirySummaryEmail(inquiries, fromTimestamp, toTimestamp);
+        if (!emailSent) {
+            throw new Error('Inquiry summary email delivery unavailable');
+        }
         
         // Update job state on success
         await jobStateRepository.updateJobState(JOB_NAME, {
@@ -77,9 +81,24 @@ async function sendDailySummary() {
         console.error('❌ Daily inquiry summary failed:', error.message);
         
         // Update job state with error (but don't update last_success_at)
+        let jobStateUpdateFailed = false;
         await jobStateRepository.updateJobState(JOB_NAME, {
             success: false,
             error: 'Inquiry summary failed'
+        }).catch(jobStateError => {
+            jobStateUpdateFailed = true;
+            console.error('❌ Failed to record inquiry summary failure:', jobStateError.message);
+        });
+
+        await notifyCriticalFailure({
+            key: 'inquiry-summary:failed',
+            title: 'Daily inquiry summary failed',
+            path: 'inquirySummary.sendDailySummary',
+            error,
+            context: {
+                jobName: JOB_NAME,
+                jobStateUpdateFailed
+            }
         });
         
         throw error;

@@ -6,12 +6,14 @@ const express = require('express');
 const configPath = require.resolve('../../config');
 const repositoryPath = require.resolve('../../dal/repositories/callRepository');
 const emailPath = require.resolve('../../integrations/email');
+const criticalAlertsPath = require.resolve('../../services/criticalAlerts');
 const servicePath = require.resolve('../../ivr/service');
 const routesPath = require.resolve('../../ivr/routes');
 const priorModules = new Map();
 const incomingCalls = [];
 const updatedCalls = [];
 const notifications = [];
+const criticalAlerts = [];
 const { publicKey, privateKey } = generateKeyPairSync('ed25519');
 const telnyxPublicKey = publicKey
     .export({ format: 'der', type: 'spki' })
@@ -85,6 +87,12 @@ before(async () => {
             return notificationResult;
         }
     });
+    replaceModule(criticalAlertsPath, {
+        async notifyCriticalFailure(alert) {
+            criticalAlerts.push(alert);
+            return { success: true, messageId: `alert-${criticalAlerts.length}` };
+        }
+    });
     replaceModule(servicePath, {
         async isOfficeOpen() {
             return officeOpen;
@@ -110,6 +118,7 @@ beforeEach(() => {
     incomingCalls.length = 0;
     updatedCalls.length = 0;
     notifications.length = 0;
+    criticalAlerts.length = 0;
     officeOpen = true;
     notificationResult = { success: true, messageId: 'message-1' };
 });
@@ -349,6 +358,16 @@ test('follow-up request remains graceful when interim notification is unavailabl
         outcome: 'closed_hours_followup_requested',
         notes: 'Follow-up requested (closed_hours); interim email unavailable.'
     }]);
+    assert.equal(criticalAlerts.length, 1);
+    assert.equal(criticalAlerts[0].key, 'ivr:followup:notification_unavailable:closed_hours');
+    assert.deepEqual(criticalAlerts[0].context, {
+        reason: 'closed_hours',
+        lostData: {
+            callerNumber: '+972501234567',
+            providerCallId: 'v3:incoming-no-email',
+            requestedOutcome: 'closed_hours_followup_requested'
+        }
+    });
     assert.match(xml, /בקשתך התקבלה/);
     assert.match(xml, /<Hangup\/>/);
 });

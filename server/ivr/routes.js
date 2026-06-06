@@ -21,6 +21,7 @@ const {
 const { getMessage } = require('./messages');
 const { requireAuth } = require('../middleware/requireAuth');
 const { verifyTelnyxWebhook } = require('../middleware/verifyTelnyxWebhook');
+const { notifyCriticalFailure } = require('../services/criticalAlerts');
 const {
     addToQueue,
     getIvrSettings,
@@ -69,6 +70,18 @@ voiceRouter.post('/incoming', verifyTelnyxWebhook, async (req, res) => {
 
         if (!trackedCall) {
             console.error('Failed to track incoming call');
+            await notifyCriticalFailure({
+                key: 'ivr:incoming:call_tracking_failed',
+                title: 'Incoming IVR call was not tracked',
+                path: 'POST /api/voice/incoming',
+                context: {
+                    officeStatus: officeOpen ? 'open' : 'closed',
+                    lostData: {
+                        callerNumber,
+                        providerCallId: webhook.providerCallId || null
+                    }
+                }
+            });
         }
 
         if (officeOpen) {
@@ -124,9 +137,34 @@ voiceRouter.post('/dial-callback', verifyTelnyxWebhook, async (req, res) => {
 
             if (!updatedCall) {
                 console.error('Failed to update dial outcome for provider call');
+                await notifyCriticalFailure({
+                    key: 'ivr:dial-callback:update_failed',
+                    title: 'IVR dial outcome was not recorded',
+                    path: 'POST /api/voice/dial-callback',
+                    context: {
+                        representativeAnswered,
+                        lostData: {
+                            providerCallId: webhook.providerCallId || null,
+                            dialStatus: webhook.dialStatus || null,
+                            duration: webhook.duration || null
+                        }
+                    }
+                });
             }
         } else {
             console.error('Dial callback did not include a provider call ID');
+            await notifyCriticalFailure({
+                key: 'ivr:dial-callback:missing_provider_call_id',
+                title: 'IVR dial callback missing provider call ID',
+                path: 'POST /api/voice/dial-callback',
+                context: {
+                    representativeAnswered,
+                    lostData: {
+                        dialStatus: webhook.dialStatus || null,
+                        duration: webhook.duration || null
+                    }
+                }
+            });
         }
 
         if (representativeAnswered) {
@@ -174,11 +212,58 @@ function createFollowUpMenuHandler(reason, requestedOutcome) {
             });
 
             if (webhook.providerCallId) {
-                await callRepository.updateByProviderCallId(webhook.providerCallId, {
+                const updatedCall = await callRepository.updateByProviderCallId(webhook.providerCallId, {
                     outcome: requestedOutcome,
                     notes: notification.success
                         ? `Follow-up requested (${reason}); interim email sent.`
                         : `Follow-up requested (${reason}); interim email unavailable.`
+                });
+
+                if (!updatedCall) {
+                    await notifyCriticalFailure({
+                        key: `ivr:followup:call_update_failed:${reason}`,
+                        title: 'IVR follow-up request was not recorded',
+                        path: `POST /api/voice/${reason === 'closed_hours' ? 'closed-menu' : 'no-answer-menu'}`,
+                        context: {
+                            reason,
+                            notificationSent: notification.success,
+                            lostData: {
+                                callerNumber,
+                                providerCallId: webhook.providerCallId,
+                                requestedOutcome
+                            }
+                        }
+                    });
+                }
+            } else {
+                await notifyCriticalFailure({
+                    key: `ivr:followup:missing_provider_call_id:${reason}`,
+                    title: 'IVR follow-up request missing provider call ID',
+                    path: `POST /api/voice/${reason === 'closed_hours' ? 'closed-menu' : 'no-answer-menu'}`,
+                    context: {
+                        reason,
+                        notificationSent: notification.success,
+                        lostData: {
+                            callerNumber,
+                            requestedOutcome
+                        }
+                    }
+                });
+            }
+
+            if (!notification.success) {
+                await notifyCriticalFailure({
+                    key: `ivr:followup:notification_unavailable:${reason}`,
+                    title: 'IVR follow-up notification unavailable',
+                    path: `POST /api/voice/${reason === 'closed_hours' ? 'closed-menu' : 'no-answer-menu'}`,
+                    context: {
+                        reason,
+                        lostData: {
+                            callerNumber,
+                            providerCallId: webhook.providerCallId || null,
+                            requestedOutcome
+                        }
+                    }
                 });
             }
 
@@ -188,6 +273,20 @@ function createFollowUpMenuHandler(reason, requestedOutcome) {
             ));
         } catch (error) {
             console.error('Error handling follow-up menu selection:', error.message);
+            await notifyCriticalFailure({
+                key: `ivr:followup:handler_failed:${reason}`,
+                title: 'IVR follow-up handler failed',
+                path: `POST /api/voice/${reason === 'closed_hours' ? 'closed-menu' : 'no-answer-menu'}`,
+                error,
+                context: {
+                    reason,
+                    lostData: {
+                        callerNumber,
+                        providerCallId: webhook.providerCallId || null,
+                        requestedOutcome
+                    }
+                }
+            });
             return res.type('text/xml').send(texmlResponse(
                 texmlSay(getMessage('IVR_request_received')),
                 texmlHangup()

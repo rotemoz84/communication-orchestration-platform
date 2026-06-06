@@ -5,12 +5,14 @@ const express = require('express');
 
 const createdInquiries = [];
 const createdBookings = [];
+const criticalAlerts = [];
 const sessions = new Map();
 const restorers = [];
 
 let appServer;
 let baseUrl;
 let nextSessionId = 1;
+let failInquiryCreate = false;
 
 const bookingSettings = {
     meetingTypes: [
@@ -70,6 +72,9 @@ async function request(path, options = {}) {
 before(async () => {
     replaceModule('../../dal/repositories/inquiryRepository', {
         async create(inquiry) {
+            if (failInquiryCreate) {
+                throw new Error('database unavailable');
+            }
             createdInquiries.push(inquiry);
             return { inquiryId: `INQ-TEST-${createdInquiries.length}` };
         },
@@ -84,6 +89,12 @@ before(async () => {
         },
         async updateById() {
             return null;
+        }
+    });
+    replaceModule('../../services/criticalAlerts', {
+        async notifyCriticalFailure(alert) {
+            criticalAlerts.push(alert);
+            return { success: true, messageId: `alert-${criticalAlerts.length}` };
         }
     });
 
@@ -176,8 +187,10 @@ before(async () => {
 beforeEach(() => {
     createdInquiries.length = 0;
     createdBookings.length = 0;
+    criticalAlerts.length = 0;
     sessions.clear();
     nextSessionId = 1;
+    failInquiryCreate = false;
 });
 
 after(async () => {
@@ -287,6 +300,38 @@ test('public lead capture requires contact details and consent evidence', async 
 
     assert.equal(acceptedWithoutPregnancyWeek.response.status, 201);
     assert.equal(createdInquiries[1].sensitiveDataConsent, false);
+});
+
+test('public inquiry save failure sends recoverable submitted data in a critical alert', async () => {
+    failInquiryCreate = true;
+
+    const failed = await request('/api/inquiries', {
+        method: 'POST',
+        body: JSON.stringify({
+            name: 'Patient',
+            phone: '0501234567',
+            email: 'patient@example.test',
+            privacyConsent: true
+        })
+    });
+
+    assert.equal(failed.response.status, 500);
+    assert.equal(failed.body.error, 'Failed to save inquiry');
+    assert.equal(criticalAlerts.length, 1);
+    assert.equal(criticalAlerts[0].key, 'inquiry:create:save_failed');
+    assert.deepEqual(criticalAlerts[0].context, {
+        source: 'website',
+        lostData: {
+            name: 'Patient',
+            phone: '0501234567',
+            email: 'patient@example.test',
+            service: null,
+            week: null,
+            message: null,
+            privacyConsent: true,
+            sensitiveDataConsent: false
+        }
+    });
 });
 
 test('admin inquiry listing is blocked without login and available after login', async () => {

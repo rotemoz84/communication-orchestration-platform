@@ -79,7 +79,48 @@ returns `409` if a requested slot is no longer available.
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/health` | Process health and configured timezone |
+| `GET` | `/ready` | Critical readiness checks for deploy promotion |
 | `POST` | `/sync/calendar` | Manually sync Google Calendar data to Sheets; authentication required |
+
+`GET /ready` returns `200` only when critical business paths are available:
+required environment, PostgreSQL connection and tables, a rolled-back synthetic
+inquiry insert, SMTP verification, Google Sheets booking settings, and Google
+Calendar free/busy access. It returns `503` with per-check details when a
+critical check fails. Failed runtime readiness checks also trigger a
+rate-limited critical alert email.
+
+Run the same gate before promoting a release:
+
+```bash
+npm run preflight
+```
+
+In production, startup also runs the critical readiness checks before listening.
+For staging or another non-production environment, set
+`REQUIRE_READY_ON_START=true` to get the same fail-fast behavior. The deployment
+runner should start the new release on a temporary port, call `/api/ready`, and
+only switch traffic after it returns `200`; otherwise stop the new release and
+keep the current version serving traffic.
+
+## Critical Alerts
+
+Critical business-path failures send a rate-limited email through the SMTP
+integration to `EMAIL_NOTIFICATION_TO`. Alerts are deduplicated by issue key for
+60 minutes.
+
+Alerted failures include:
+
+- production startup DB/readiness failures
+- failed `/ready` critical checks
+- public inquiry save failure
+- daily inquiry summary failure or skipped email delivery
+- IVR follow-up notification or call-record update failure
+- booking reservation failure after a submitted reservation request
+
+When a submitted request could be lost, the alert includes the recoverable
+request details, such as name, email, phone, requested service/date/time, and
+message text. IVR follow-up alerts include the caller number and provider call
+ID when available.
 
 ## Call History
 

@@ -10,6 +10,8 @@ const cors = require('cors');
 
 // Configuration
 const { config, validateConfig } = require('./config');
+const { assertReadiness, runReadinessChecks } = require('./services/healthChecks');
+const { notifyCriticalFailure } = require('./services/criticalAlerts');
 
 // DAL (Database)
 const { initDatabase, getPool } = require('./dal');
@@ -91,6 +93,27 @@ app.get(BASE_PATH + '/api/health', (req, res) => {
     });
 });
 
+app.get(BASE_PATH + '/api/ready', async (req, res) => {
+    const result = await runReadinessChecks();
+
+    if (!result.success) {
+        const failedChecks = result.checks
+            .filter(check => check.critical && check.status !== 'ok')
+            .map(check => check.name);
+
+        await notifyCriticalFailure({
+            key: `readiness:${failedChecks.join(',')}`,
+            title: 'Critical readiness check failed',
+            path: 'GET /api/ready',
+            context: {
+                failedChecks
+            }
+        });
+    }
+
+    res.status(result.success ? 200 : 503).json(result);
+});
+
 // ============================================
 // API Routes
 // ============================================
@@ -142,6 +165,8 @@ async function startServer() {
     try {
         // Validate configuration
         validateConfig();
+        const shouldRequireReadiness = config.nodeEnv === 'production'
+            || process.env.REQUIRE_READY_ON_START === 'true';
 
         // Initialize database connection
         let dbConnected = false;
@@ -152,6 +177,18 @@ async function startServer() {
             dbConnected = true;
         } catch (dbError) {
             console.error('⚠️ Database connection failed:', dbError.message);
+            await notifyCriticalFailure({
+                key: 'startup:database_connection_failed',
+                title: 'Database connection failed during startup',
+                path: 'server.startup',
+                error: dbError,
+                context: {
+                    productionGateEnabled: shouldRequireReadiness
+                }
+            });
+            if (shouldRequireReadiness) {
+                throw dbError;
+            }
             console.log('⚠️ Server will continue without database');
         }
 
@@ -195,6 +232,31 @@ async function startServer() {
             app.get(BASE_PATH + '/admin/*', (req, res) => {
                 res.sendFile(path.join(adminPath, 'index.html'));
             });
+        }
+
+        if (shouldRequireReadiness) {
+            if (!dbConnected) {
+                throw new Error('Database is required before production startup can continue');
+            }
+
+            console.log('🩺 Running critical startup readiness checks...');
+            await assertReadiness().catch(async readinessError => {
+                await notifyCriticalFailure({
+                    key: 'startup:readiness_failed',
+                    title: 'Startup readiness checks failed',
+                    path: 'server.startup',
+                    error: readinessError,
+                    context: {
+                        failedChecks: readinessError.readiness
+                            ? readinessError.readiness.checks
+                                .filter(check => check.critical && check.status !== 'ok')
+                                .map(check => check.name)
+                            : []
+                    }
+                });
+                throw readinessError;
+            });
+            console.log('✅ Critical startup readiness checks passed');
         }
 
         app.listen(config.port, () => {
