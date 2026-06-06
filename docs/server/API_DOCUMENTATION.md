@@ -102,6 +102,17 @@ runner should start the new release on a temporary port, call `/api/ready`, and
 only switch traffic after it returns `200`; otherwise stop the new release and
 keep the current version serving traffic.
 
+After a successful promotion, send a confirmation email to
+`DEPLOYMENT_SUCCESS_EMAIL_TO`:
+
+```bash
+npm run notify-deployment-success
+```
+
+`DEPLOYMENT_SUCCESS_EMAIL_TO` accepts a comma- or semicolon-separated list of
+email addresses. The confirmation includes the environment, commit, base URL,
+readiness URL, and deployment timestamp.
+
 ## Critical Alerts
 
 Critical business-path failures send a rate-limited email through the SMTP

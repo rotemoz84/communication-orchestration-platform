@@ -8,6 +8,7 @@
     "dev": "node --watch index.js",
     "test": "node --test test/e2e/*.test.js",
     "preflight": "node scripts/preflight.js",
+    "notify-deployment-success": "node scripts/notify-deployment-success.js",
     "send-reminders": "node -e \"require('./services/reminder').sendDailyReminders().then(console.log).catch(console.error)\"",
     "seed-admin": "node scripts/seed-admin.js"
   },

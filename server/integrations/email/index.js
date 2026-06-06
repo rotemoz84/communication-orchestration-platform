@@ -7,6 +7,17 @@ const nodemailer = require('nodemailer');
 
 let transporter = null;
 
+function parseEmailList(value) {
+    if (!value || typeof value !== 'string') {
+        return [];
+    }
+
+    return value
+        .split(/[;,]/)
+        .map(email => email.trim())
+        .filter(Boolean);
+}
+
 /**
  * Initialize Nodemailer SMTP transporter
  */
@@ -312,10 +323,67 @@ async function sendCriticalAlertEmail(alert) {
     }
 }
 
+/**
+ * Send a confirmation email after a successful deployment.
+ * @param {Object} deployment - Deployment metadata
+ */
+async function sendDeploymentSuccessEmail(deployment = {}) {
+    if (!transporter) {
+        transporter = initializeEmailTransporter();
+        if (!transporter) {
+            console.log('Deployment success email skipped: SMTP not configured');
+            return { success: false, error: 'Deployment success email unavailable' };
+        }
+    }
+
+    const recipients = parseEmailList(process.env.DEPLOYMENT_SUCCESS_EMAIL_TO);
+    const senderEmail = process.env.EMAIL_FROM;
+
+    if (recipients.length === 0 || !senderEmail) {
+        console.warn('Deployment success email skipped: EMAIL_FROM or DEPLOYMENT_SUCCESS_EMAIL_TO not configured');
+        return { success: false, error: 'Deployment success email unavailable' };
+    }
+
+    const deployedAt = deployment.deployedAt || new Date().toISOString();
+    const environment = deployment.environment || process.env.NODE_ENV || 'unknown';
+    const commit = deployment.commit || process.env.DEPLOYMENT_COMMIT || 'unknown';
+    const baseUrl = deployment.baseUrl || process.env.BASE_URL || 'unknown';
+    const readyUrl = deployment.readyUrl || (baseUrl !== 'unknown' ? `${baseUrl.replace(/\/$/, '')}/api/ready` : 'unknown');
+    const subject = `Deployment succeeded: ${environment}`;
+    const text = [
+        'Deployment completed successfully.',
+        '',
+        `Environment: ${environment}`,
+        `Commit: ${commit}`,
+        `Base URL: ${baseUrl}`,
+        `Readiness URL: ${readyUrl}`,
+        `Deployed at: ${deployedAt}`,
+        '',
+        'This confirmation is sent after the deployment process promotes the new server version.'
+    ].join('\n');
+
+    try {
+        const info = await transporter.sendMail({
+            from: senderEmail,
+            to: recipients,
+            subject,
+            text
+        });
+
+        console.log(`Deployment success email sent: ${info.messageId}`);
+        return { success: true, messageId: info.messageId };
+    } catch (error) {
+        console.error('Failed to send deployment success email:', error.message);
+        return { success: false, error: 'Deployment success email unavailable' };
+    }
+}
+
 module.exports = {
     initializeEmailTransporter,
+    parseEmailList,
     testEmailConnection,
     sendInquirySummaryEmail,
     sendIvrFallbackNotification,
-    sendCriticalAlertEmail
+    sendCriticalAlertEmail,
+    sendDeploymentSuccessEmail
 };

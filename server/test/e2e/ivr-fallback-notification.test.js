@@ -12,6 +12,7 @@ const environmentKeys = [
     'SMTP_PASSWORD',
     'EMAIL_FROM',
     'EMAIL_NOTIFICATION_TO',
+    'DEPLOYMENT_SUCCESS_EMAIL_TO',
     'IVR_FALLBACK_EMAIL_TO'
 ];
 const priorEnvironment = Object.fromEntries(
@@ -49,6 +50,7 @@ beforeEach(() => {
     process.env.SMTP_PASSWORD = 'smtp-password';
     process.env.EMAIL_FROM = 'sender@example.test';
     process.env.EMAIL_NOTIFICATION_TO = 'summary@example.test';
+    process.env.DEPLOYMENT_SUCCESS_EMAIL_TO = 'owner@example.test, dev@example.test;ops@example.test';
     process.env.IVR_FALLBACK_EMAIL_TO = 'ivr@example.test';
 });
 
@@ -161,4 +163,34 @@ test('critical alert email uses the configured notification recipient', async ()
     assert.match(sentMessages[0].text, /0501234567/);
     assert.match(sentMessages[0].text, /patient@example\.test/);
     assert.match(sentMessages[0].text, /Please call/);
+});
+
+test('deployment success email uses the configured recipient list', async () => {
+    const { parseEmailList, sendDeploymentSuccessEmail } = loadEmailService();
+
+    assert.deepEqual(
+        parseEmailList('owner@example.test, dev@example.test;ops@example.test'),
+        ['owner@example.test', 'dev@example.test', 'ops@example.test']
+    );
+
+    const result = await sendDeploymentSuccessEmail({
+        environment: 'production',
+        commit: 'abc123',
+        baseUrl: 'https://api.drozyuval.com',
+        readyUrl: 'https://api.drozyuval.com/api/ready',
+        deployedAt: '2026-06-06T12:00:00.000Z'
+    });
+
+    assert.deepEqual(result, { success: true, messageId: 'message-1' });
+    assert.equal(sentMessages.length, 1);
+    assert.deepEqual(sentMessages[0].to, [
+        'owner@example.test',
+        'dev@example.test',
+        'ops@example.test'
+    ]);
+    assert.equal(sentMessages[0].subject, 'Deployment succeeded: production');
+    assert.match(sentMessages[0].text, /Commit: abc123/);
+    assert.match(sentMessages[0].text, /Base URL: https:\/\/api\.drozyuval\.com/);
+    assert.match(sentMessages[0].text, /Readiness URL: https:\/\/api\.drozyuval\.com\/api\/ready/);
+    assert.match(sentMessages[0].text, /Deployed at: 2026-06-06T12:00:00.000Z/);
 });
