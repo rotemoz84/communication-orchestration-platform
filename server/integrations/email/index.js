@@ -274,11 +274,11 @@ async function sendCriticalAlertEmail(alert) {
         }
     }
 
-    const recipientEmail = process.env.EMAIL_NOTIFICATION_TO;
+    const recipients = parseEmailList(process.env.DEPLOYMENT_SUCCESS_EMAIL_TO);
     const senderEmail = process.env.EMAIL_FROM;
 
-    if (!recipientEmail || !senderEmail) {
-        console.warn('Critical alert skipped: EMAIL_FROM or alert recipient not configured');
+    if (recipients.length === 0 || !senderEmail) {
+        console.warn('Critical alert skipped: EMAIL_FROM or DEPLOYMENT_SUCCESS_EMAIL_TO not configured');
         return { success: false, error: 'Critical alert delivery unavailable' };
     }
 
@@ -310,7 +310,7 @@ async function sendCriticalAlertEmail(alert) {
     try {
         const info = await transporter.sendMail({
             from: senderEmail,
-            to: recipientEmail,
+            to: recipients,
             subject,
             text
         });

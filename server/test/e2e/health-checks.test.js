@@ -21,6 +21,7 @@ const requiredEnvironment = {
     SMTP_PASSWORD: 'smtp-password',
     EMAIL_FROM: 'sender@example.test',
     EMAIL_NOTIFICATION_TO: 'summary@example.test',
+    DEPLOYMENT_SUCCESS_EMAIL_TO: 'owner@example.test,dev@example.test',
     IVR_FALLBACK_EMAIL_TO: 'ivr@example.test',
     GOOGLE_SHEET_ID: 'sheet-id',
     GOOGLE_CALENDAR_ID: 'calendar-id',

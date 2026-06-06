@@ -130,7 +130,7 @@ test('daily inquiry summary keeps its existing summary recipient', async () => {
     assert.notEqual(sentMessages[0].to, process.env.IVR_FALLBACK_EMAIL_TO);
 });
 
-test('critical alert email uses the configured notification recipient', async () => {
+test('critical alert email uses the deployment recipient list', async () => {
     const { sendCriticalAlertEmail } = loadEmailService();
 
     const result = await sendCriticalAlertEmail({
@@ -155,7 +155,11 @@ test('critical alert email uses the configured notification recipient', async ()
 
     assert.deepEqual(result, { success: true, messageId: 'message-1' });
     assert.equal(sentMessages.length, 1);
-    assert.equal(sentMessages[0].to, 'summary@example.test');
+    assert.deepEqual(sentMessages[0].to, [
+        'owner@example.test',
+        'dev@example.test',
+        'ops@example.test'
+    ]);
     assert.equal(sentMessages[0].subject, '[CRITICAL] Website inquiry failed to save');
     assert.match(sentMessages[0].text, /Key: inquiry:create:save_failed/);
     assert.match(sentMessages[0].text, /Path: POST \/api\/inquiries/);
