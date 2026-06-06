@@ -25,3 +25,12 @@ test('server can send deployment success email automatically after startup', () 
     assert.match(serverIndex, /sendDeploymentSuccessEmail/);
     assert.match(serverIndex, /sendDeploymentSuccessOnStartup\(\);/);
 });
+
+test('startup readiness alerts include failed check messages and details', () => {
+    const serverIndex = read('index.js');
+
+    assert.match(serverIndex, /function getFailedReadinessCheckDetails/);
+    assert.match(serverIndex, /failedCheckDetails/);
+    assert.match(serverIndex, /message: check\.message/);
+    assert.match(serverIndex, /details: check\.details/);
+});

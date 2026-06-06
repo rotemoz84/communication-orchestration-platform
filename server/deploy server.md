@@ -21,3 +21,19 @@
 14. test readiness:
     - https://api.drozyuval.com/api/ready
 15. test database access (now on supabase). https://supabase.com/dashboard/project/fzpdgsbrsvfnzmxdpxsz
+
+## Startup Readiness Troubleshooting
+
+If the deployment alert says `required_environment` failed, check that every
+required cPanel environment variable is set and non-empty. Common missed values
+are `DEPLOYMENT_SUCCESS_EMAIL_TO`, `SESSION_SECRET`, `CRON_SECRET`,
+`CRON_ADMIN_EMAIL`, `TELNYX_PUBLIC_KEY`, SMTP variables, and the Google IDs.
+
+If the alert says `google_business_integrations` failed, check:
+
+- `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` points to a service-account JSON file that
+  exists on the server.
+- The Google service account has access to both the configured Google Sheet and
+  Calendar.
+- The Sheet still has active Meeting Types and Working Hours rows.
+- `GOOGLE_SHEET_ID` and `GOOGLE_CALENDAR_ID` are correct in cPanel variables.

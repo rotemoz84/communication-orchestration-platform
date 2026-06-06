@@ -80,6 +80,20 @@ function buildReadyUrl() {
     return `${baseUrl}${BASE_PATH}/api/ready`;
 }
 
+function getFailedReadinessCheckDetails(readiness) {
+    if (!readiness || !Array.isArray(readiness.checks)) {
+        return [];
+    }
+
+    return readiness.checks
+        .filter(check => check.critical && check.status !== 'ok')
+        .map(check => ({
+            name: check.name,
+            message: check.message,
+            details: check.details
+        }));
+}
+
 function sendDeploymentSuccessOnStartup() {
     if (process.env.DEPLOYMENT_AUTOMATION_ENABLED !== 'true') {
         return;
@@ -123,16 +137,15 @@ app.get(BASE_PATH + '/api/ready', async (req, res) => {
     const result = await runReadinessChecks();
 
     if (!result.success) {
-        const failedChecks = result.checks
-            .filter(check => check.critical && check.status !== 'ok')
-            .map(check => check.name);
+        const failedCheckDetails = getFailedReadinessCheckDetails(result);
 
         await notifyCriticalFailure({
-            key: `readiness:${failedChecks.join(',')}`,
+            key: `readiness:${failedCheckDetails.map(check => check.name).join(',')}`,
             title: 'Critical readiness check failed',
             path: 'GET /api/ready',
             context: {
-                failedChecks
+                failedChecks: failedCheckDetails.map(check => check.name),
+                failedCheckDetails
             }
         });
     }
@@ -273,11 +286,9 @@ async function startServer() {
                     path: 'server.startup',
                     error: readinessError,
                     context: {
-                        failedChecks: readinessError.readiness
-                            ? readinessError.readiness.checks
-                                .filter(check => check.critical && check.status !== 'ok')
-                                .map(check => check.name)
-                            : []
+                        failedChecks: getFailedReadinessCheckDetails(readinessError.readiness)
+                            .map(check => check.name),
+                        failedCheckDetails: getFailedReadinessCheckDetails(readinessError.readiness)
                     }
                 });
                 throw readinessError;
