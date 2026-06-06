@@ -7,6 +7,7 @@
     "start": "node index.js",
     "dev": "node --watch index.js",
     "test": "node --test test/e2e/*.test.js",
+    "postinstall": "node scripts/postinstall-deployment-checks.js",
     "preflight": "node scripts/preflight.js",
     "notify-deployment-success": "node scripts/notify-deployment-success.js",
     "send-reminders": "node -e \"require('./services/reminder').sendDailyReminders().then(console.log).catch(console.error)\"",

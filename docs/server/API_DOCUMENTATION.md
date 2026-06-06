@@ -95,12 +95,11 @@ Run the same gate before promoting a release:
 npm run preflight
 ```
 
-In production, startup also runs the critical readiness checks before listening.
-For staging or another non-production environment, set
-`REQUIRE_READY_ON_START=true` to get the same fail-fast behavior. The deployment
-runner should start the new release on a temporary port, call `/api/ready`, and
-only switch traffic after it returns `200`; otherwise stop the new release and
-keep the current version serving traffic.
+For cPanel deployments, set `DEPLOYMENT_AUTOMATION_ENABLED=true`. Then cPanel's
+"Run NPM Install" action runs the preflight automatically through the
+`postinstall` lifecycle script. If preflight fails, the install step fails and
+the new release should not be started. The same flag also requires startup
+readiness checks before the server listens.
 
 After a successful promotion, send a confirmation email to the recipients in
 `DEPLOYMENT_SUCCESS_EMAIL_TO`:
@@ -108,6 +107,10 @@ After a successful promotion, send a confirmation email to the recipients in
 ```bash
 npm run notify-deployment-success
 ```
+
+For cPanel deployments, `DEPLOYMENT_AUTOMATION_ENABLED=true` also sends the
+confirmation automatically after the cPanel "Start Application" action
+succeeds.
 
 `DEPLOYMENT_SUCCESS_EMAIL_TO` accepts a comma- or semicolon-separated list of
 email addresses. The confirmation includes the environment, commit, base URL,

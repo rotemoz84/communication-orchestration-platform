@@ -38,6 +38,7 @@ const {
     syncCalendarToSheet, 
     schedulePeriodicSync 
 } = require('./integrations/google');
+const { sendDeploymentSuccessEmail } = require('./integrations/email');
 
 const app = express();
 
@@ -73,6 +74,31 @@ app.use(express.urlencoded({
 // Route Prefix (for cPanel deployments)
 // ============================================
 const BASE_PATH = process.env.BASE_PATH || '';
+
+function buildReadyUrl() {
+    const baseUrl = String(config.baseUrl || '').replace(/\/$/, '');
+    return `${baseUrl}${BASE_PATH}/api/ready`;
+}
+
+function sendDeploymentSuccessOnStartup() {
+    if (process.env.DEPLOYMENT_AUTOMATION_ENABLED !== 'true') {
+        return;
+    }
+
+    sendDeploymentSuccessEmail({
+        environment: process.env.DEPLOYMENT_ENVIRONMENT || config.nodeEnv || 'production',
+        commit: process.env.DEPLOYMENT_COMMIT || process.env.GIT_COMMIT,
+        baseUrl: config.baseUrl,
+        readyUrl: buildReadyUrl(),
+        deployedAt: new Date().toISOString()
+    }).then(result => {
+        if (!result.success) {
+            console.error('Deployment success email failed:', result.error);
+        }
+    }).catch(error => {
+        console.error('Deployment success email failed:', error.message);
+    });
+}
 
 // ============================================
 // Favicon (avoid 404 in browser console)
@@ -166,7 +192,7 @@ async function startServer() {
         // Validate configuration
         validateConfig();
         const shouldRequireReadiness = config.nodeEnv === 'production'
-            || process.env.REQUIRE_READY_ON_START === 'true';
+            || process.env.DEPLOYMENT_AUTOMATION_ENABLED === 'true';
 
         // Initialize database connection
         let dbConnected = false;
@@ -269,6 +295,7 @@ async function startServer() {
             console.log(`🗄️ Database: ${dbConnected ? config.db.database : 'Not connected'}`);
             console.log(`🕐 Timezone: ${config.timezone}`);
             console.log('═══════════════════════════════════════════════');
+            sendDeploymentSuccessOnStartup();
             
             // Start calendar sync scheduler (every 30 minutes) - only if Google is configured
             try {
